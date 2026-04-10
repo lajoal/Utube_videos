@@ -8,6 +8,7 @@ Seed workspace for a Korean video production flow.
 - `config/targets.txt.example`
 - `docs/reporting-workflow.md`
 - `schemas/reporting_output.schema.json`
+- `examples/README.md`
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
@@ -17,6 +18,7 @@ Seed workspace for a Korean video production flow.
 - `scene_prompts.json`
 - `render_plan.json`
 - `tests/test_reporting.py`
+- `tests/test_reporting_examples.py`
 - `.github/workflows/test.yml`
 - `Makefile`
 
@@ -82,6 +84,7 @@ Detailed reporting behavior and examples live here:
 - `docs/reporting-workflow.md`
 - `config/targets.txt.example`
 - `schemas/reporting_output.schema.json`
+- `examples/README.md`
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
@@ -93,5 +96,7 @@ Run the built-in unit tests from the repository root:
 ```bash
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
+
+The test suite now also checks that the checked-in sample outputs stay aligned with the documented report shape.
 
 GitHub Actions runs the test suite, performs a strict reporting smoke check, publishes the Markdown summary into the workflow summary UI, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main` and on pull requests.
