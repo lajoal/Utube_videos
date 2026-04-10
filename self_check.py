@@ -117,6 +117,10 @@ def resolve_output_path(repo_root: Path, output_path: str) -> Path:
     return repo_root / path
 
 
+def elapsed_seconds(started_at: datetime, finished_at: datetime) -> float:
+    return round((finished_at - started_at).total_seconds(), 6)
+
+
 def run_step(label: str, command: list[str], repo_root: Path) -> int:
     print(f"== {label} ==")
     print("$ " + " ".join(command))
@@ -130,6 +134,9 @@ def build_step_result(
     *,
     status: str,
     exit_code: int | None,
+    started_at: str | None = None,
+    finished_at: str | None = None,
+    duration_seconds: float | None = None,
 ) -> dict[str, Any]:
     return {
         "label": label,
@@ -137,6 +144,9 @@ def build_step_result(
         "command_display": " ".join(command),
         "status": status,
         "exit_code": exit_code,
+        "started_at": started_at,
+        "finished_at": finished_at,
+        "duration_seconds": duration_seconds,
     }
 
 
@@ -150,10 +160,20 @@ def run_commands(
     step_results: list[dict[str, Any]] = []
 
     for index, (label, command) in enumerate(commands):
+        step_started_at = datetime.now(timezone.utc)
         exit_code = run_step(label, command, repo_root)
+        step_finished_at = datetime.now(timezone.utc)
         status = "passed" if exit_code == 0 else "failed"
         step_results.append(
-            build_step_result(label, command, status=status, exit_code=exit_code)
+            build_step_result(
+                label,
+                command,
+                status=status,
+                exit_code=exit_code,
+                started_at=step_started_at.isoformat(),
+                finished_at=step_finished_at.isoformat(),
+                duration_seconds=elapsed_seconds(step_started_at, step_finished_at),
+            )
         )
 
         if exit_code == 0:
@@ -183,6 +203,9 @@ def build_summary(
     args: argparse.Namespace,
     step_results: list[dict[str, Any]],
     exit_code: int,
+    started_at: str,
+    finished_at: str,
+    duration_seconds: float,
 ) -> dict[str, Any]:
     summary_path = resolve_output_path(repo_root, args.summary_output)
     summary_markdown_path = resolve_output_path(repo_root, args.summary_markdown_output)
@@ -201,6 +224,9 @@ def build_summary(
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": started_at,
+        "finished_at": finished_at,
+        "duration_seconds": duration_seconds,
         "repo_root": str(repo_root),
         "python_executable": args.python,
         "keep_going": args.keep_going,
@@ -228,6 +254,9 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
         f"- Overall status: `{summary['overall_status'].upper()}`",
         f"- Overall passed: `{summary['overall_passed']}`",
         f"- Generated at: `{summary['generated_at']}`",
+        f"- Started at: `{summary['started_at']}`",
+        f"- Finished at: `{summary['finished_at']}`",
+        f"- Duration seconds: `{summary['duration_seconds']}`",
         f"- Repository root: `{summary['repo_root']}`",
         f"- Python executable: `{summary['python_executable']}`",
         f"- Keep going: `{summary['keep_going']}`",
@@ -256,6 +285,9 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
             lines.append("")
             lines.append(f"- Status: `{step['status'].upper()}`")
             lines.append(f"- Exit code: `{step['exit_code']}`")
+            lines.append(f"- Started at: `{step['started_at']}`")
+            lines.append(f"- Finished at: `{step['finished_at']}`")
+            lines.append(f"- Duration seconds: `{step['duration_seconds']}`")
             lines.append(f"- Command: `{step['command_display']}`")
             lines.append("")
     else:
@@ -295,8 +327,19 @@ def main(argv: list[str] | None = None) -> int:
         skip_report=args.skip_report,
     )
 
+    workflow_started_at = datetime.now(timezone.utc)
+
     if not commands:
-        summary = build_summary(repo_root, args, [], 0)
+        workflow_finished_at = datetime.now(timezone.utc)
+        summary = build_summary(
+            repo_root,
+            args,
+            [],
+            0,
+            workflow_started_at.isoformat(),
+            workflow_finished_at.isoformat(),
+            elapsed_seconds(workflow_started_at, workflow_finished_at),
+        )
         write_summary(summary_path, summary)
         write_summary_markdown(summary_markdown_path, summary)
         print("No self-check steps selected.")
@@ -309,7 +352,16 @@ def main(argv: list[str] | None = None) -> int:
         repo_root,
         keep_going=args.keep_going,
     )
-    summary = build_summary(repo_root, args, step_results, exit_code)
+    workflow_finished_at = datetime.now(timezone.utc)
+    summary = build_summary(
+        repo_root,
+        args,
+        step_results,
+        exit_code,
+        workflow_started_at.isoformat(),
+        workflow_finished_at.isoformat(),
+        elapsed_seconds(workflow_started_at, workflow_finished_at),
+    )
     write_summary(summary_path, summary)
     write_summary_markdown(summary_markdown_path, summary)
 

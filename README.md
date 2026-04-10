@@ -1,53 +1,81 @@
-# Utube_videos
+# Reporting Workflow
 
-Seed workspace for a Korean video production flow.
+This repository uses `reporting.py` to validate the core video-production artifacts and produce two outputs:
 
-## Included files
-- `reporting.py`
-- `self_check.py`
-- `reporting_targets.txt`
-- `config/targets.txt.example`
-- `docs/reporting-workflow.md`
-- `schemas/reporting_output.schema.json`
-- `schemas/self_check_summary.schema.json`
-- `examples/README.md`
-- `examples/reporting_output.sample.json`
-- `examples/reporting_summary.sample.md`
-- `examples/reporting_output.fail.sample.json`
-- `examples/reporting_summary.fail.sample.md`
-- `examples/self_check_summary.sample.json`
-- `examples/self_check_summary.sample.md`
-- `examples/self_check_summary.fail.sample.json`
-- `examples/self_check_summary.fail.sample.md`
-- `image_generation_prompts_ko.txt`
-- `tts_script_ko.txt`
-- `scene_prompts.json`
-- `render_plan.json`
-- `tests/test_reporting.py`
-- `tests/test_reporting_examples.py`
-- `tests/test_self_check.py`
-- `tests/test_self_check_examples.py`
-- `.github/workflows/test.yml`
-- `Makefile`
+- A machine-friendly JSON report
+- A human-friendly Markdown summary
 
-## Usage
-Run the reporting script from the repository root:
+## Default Outputs
+
+Running the script from the repository root without extra arguments creates:
 
 ```bash
 python reporting.py
 ```
 
-This writes both `reporting_output.json` and `reporting_summary.md`.
+Generated files:
+- `reporting_output.json`
+- `reporting_summary.md`
 
-By default, the script loads its target filenames from `reporting_targets.txt`. If that file is missing, it falls back to the built-in default list in `reporting.py`.
+## Repository Self-Check
 
-For automation and CI, fail the run when one or more targets are missing or when validation issues are found:
+To run the repository's built-in self-check flow end to end:
+
+```bash
+python self_check.py
+python self_check.py --keep-going
+```
+
+This runs:
+- the unit test suite
+- the strict reporting pass that writes `artifacts/reporting_output.json`
+- the strict reporting Markdown summary at `artifacts/reporting_summary.md`
+- a step-by-step self-check summary at `artifacts/self_check_summary.json`
+- a human-readable self-check summary at `artifacts/self_check_summary.md`
+
+By default, `self_check.py` stops on the first failing step. `--keep-going` tells it to continue into the strict reporting step even after earlier failures so the diagnostic artifacts are still produced whenever possible.
+
+The self-check summary JSON records which steps were selected, the exact command for each step, whether it passed, failed, or was skipped, and the overall self-check status. The companion Markdown summary presents the same information in a format that is easier to scan in CI and artifacts. Both artifacts now also include workflow-level and per-step timestamps plus duration values. You can move them with `--summary-output` and `--summary-markdown-output`.
+
+The GitHub Actions workflow and `make self-check` both use `python self_check.py --keep-going`.
+
+If the reporting step still exits before writing artifacts, the workflow summary now falls back to `artifacts/self_check_summary.md` so the uploaded artifacts still contain a readable step-by-step failure trail.
+
+## Strict Mode
+
+Strict mode is intended for CI and automation.
 
 ```bash
 python reporting.py --fail-on-missing --fail-on-validation-issues
 ```
 
-You can also load targets from another file and write the JSON report and Markdown summary to custom locations:
+This returns a non-zero exit code when:
+- one or more target files are missing
+- one or more validation issues are found
+
+## Artifact Layout
+
+The repository Makefile uses `artifacts/` for strict runs:
+
+```bash
+make report-strict
+make self-check
+```
+
+Generated files:
+- `artifacts/reporting_output.json`
+- `artifacts/reporting_summary.md`
+- `artifacts/self_check_summary.json`
+- `artifacts/self_check_summary.md`
+
+## Target Files
+
+The default target list is stored in `reporting_targets.txt`.
+
+If you want a custom manifest, start from:
+- `config/targets.txt.example`
+
+Example custom run:
 
 ```bash
 python reporting.py \
@@ -56,62 +84,18 @@ python reporting.py \
   --markdown-output artifacts/report.md
 ```
 
-## Self-Check
+## Output Schema
 
-To run the repository's built-in self-check flow end to end:
-
-```bash
-python self_check.py
-python self_check.py --keep-going
-make self-check
-make check
-```
-
-By default, `self_check.py` stops on the first failing step. Use `--keep-going` when you still want the strict reporting step to run after test failures so the JSON and Markdown diagnostics are produced whenever possible.
-
-Every self-check run now also writes `artifacts/self_check_summary.json` and `artifacts/self_check_summary.md` by default. Those files record the selected steps, each command that ran, whether a step passed, failed, or was skipped, and the overall self-check status. Use `--summary-output` or `--summary-markdown-output` to send those summaries to different paths.
-
-GitHub Actions and `make self-check` use `--keep-going` so the workflow still attempts to publish reporting artifacts even when an earlier self-check step fails.
-
-If the reporting step does not produce `artifacts/reporting_summary.md`, the workflow summary falls back to `artifacts/self_check_summary.md` so there is still a human-readable failure trail in the uploaded artifacts. The JSON summary remains available for automation and machine parsing.
-
-## Validation rules
-The reporting flow validates more than file existence.
-- `image_generation_prompts_ko.txt`: must be non-empty, include scene labels such as `[scene_01_intro]`, and cross-validate those labels against the `scene_id` list in `scene_prompts.json`
-- `tts_script_ko.txt`: must be non-empty, use scene labels such as `[scene_01_intro]`, cross-validate label order and coverage against `scene_prompts.json`, and apply a simple narration-density heuristic based on each scene duration
-- `scene_prompts.json`: checks project metadata, scene structure, positive durations, and unique `scene_id` values
-- `render_plan.json`: checks render metadata, referenced asset files, timeline structure, positive durations, contiguous `start_seconds`, and cross-validates `scene_id` order and durations against `scene_prompts.json`
-
-The scanner skips common cache and virtual environment directories by default:
-- `.git`
-- `.mypy_cache`
-- `.pytest_cache`
-- `.venv`
-- `__pycache__`
-- `venv`
-
-Add more exclusions with repeated `--exclude-dir` flags.
-
-## Convenience commands
-If you use `make`, the repository includes a few shortcuts:
-
-```bash
-make report
-make report-strict
-make test
-make self-check
-make check
-```
-
-`make report-strict` writes both `artifacts/reporting_output.json` and `artifacts/reporting_summary.md`.
-
-## Docs
-Detailed reporting behavior and examples live here:
-- `docs/reporting-workflow.md`
-- `config/targets.txt.example`
+The repository documents both machine-readable artifact contracts:
 - `schemas/reporting_output.schema.json`
 - `schemas/self_check_summary.schema.json`
-- `examples/README.md`
+
+Use the reporting schema when another tool needs to validate or parse `reporting_output.json` programmatically.
+Use the self-check schema when another tool needs to consume `self_check_summary.json` as a top-level pipeline status object with timing data.
+
+## Example Outputs
+
+Sample outputs are checked into the repository here:
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
@@ -121,13 +105,41 @@ Detailed reporting behavior and examples live here:
 - `examples/self_check_summary.fail.sample.json`
 - `examples/self_check_summary.fail.sample.md`
 
-## Testing
-Run the built-in unit tests from the repository root:
+Use the `sample` files to see clean runs and the `fail.sample` files to see how missing targets, validation issues, top-level self-check step failures, and timing data appear in the artifacts.
 
-```bash
-python -m unittest discover -s tests -p 'test_*.py' -v
-```
+## What Gets Validated
 
-The test suite now also checks that the checked-in reporting and self-check sample outputs stay aligned with their documented schemas and that the `self_check.py` command composition stays consistent.
+`image_generation_prompts_ko.txt`
+- must not be empty
+- must contain scene labels such as `[scene_01_intro]`
+- labels are checked against `scene_prompts.json`
 
-GitHub Actions runs the repository self-check flow, publishes the Markdown summary into the workflow summary UI when available, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main`, pull requests, and manual dispatches.
+`tts_script_ko.txt`
+- must not be empty
+- should use scene labels for each section
+- section order and coverage are checked against `scene_prompts.json`
+- narration density is checked against each scene duration
+
+`scene_prompts.json`
+- project metadata must exist
+- scenes must have valid `scene_id`, title, duration, prompt, and narration values
+- duplicate `scene_id` values are rejected
+
+`render_plan.json`
+- referenced files must exist
+- timeline entries must be valid and contiguous
+- scene order and durations are checked against `scene_prompts.json`
+
+## Reading The Results
+
+Useful top-level JSON fields:
+- `overall_status`
+- `overall_passed`
+- `missing_targets`
+- `validation_issue_count`
+- `cross_validation_issue_count`
+- `files_with_issues`
+
+The reporting Markdown summary is best for artifact quality review.
+The self-check Markdown summary is best for understanding which top-level verification step failed before the reporting layer completed.
+The self-check JSON summary is best for machine-readable orchestration, debugging, and runtime analysis.

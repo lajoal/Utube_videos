@@ -96,6 +96,12 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertEqual(exit_code, 3)
         self.assertEqual(calls, ["Unit tests"])
         self.assertEqual([item["status"] for item in step_results], ["failed", "skipped"])
+        self.assertIsNotNone(step_results[0]["started_at"])
+        self.assertIsNotNone(step_results[0]["finished_at"])
+        self.assertIsInstance(step_results[0]["duration_seconds"], float)
+        self.assertIsNone(step_results[1]["started_at"])
+        self.assertIsNone(step_results[1]["finished_at"])
+        self.assertIsNone(step_results[1]["duration_seconds"])
 
     def test_run_commands_continues_when_keep_going_enabled(self) -> None:
         calls: list[str] = []
@@ -121,8 +127,13 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertEqual(exit_code, 5)
         self.assertEqual(calls, ["Unit tests", "Strict reporting"])
         self.assertEqual([item["status"] for item in step_results], ["failed", "passed"])
+        self.assertTrue(all(item["started_at"] is not None for item in step_results))
+        self.assertTrue(all(item["finished_at"] is not None for item in step_results))
+        self.assertTrue(
+            all(isinstance(item["duration_seconds"], float) for item in step_results)
+        )
 
-    def test_build_summary_includes_step_counts_and_paths(self) -> None:
+    def test_build_summary_includes_step_counts_paths_and_timing(self) -> None:
         args = self_check.parse_args(
             [
                 "--keep-going",
@@ -142,16 +153,30 @@ class SelfCheckScriptTests(unittest.TestCase):
                 ["python", "-m", "unittest"],
                 status="failed",
                 exit_code=1,
+                started_at="2026-04-10T12:00:00+00:00",
+                finished_at="2026-04-10T12:00:02+00:00",
+                duration_seconds=2.0,
             ),
             self_check.build_step_result(
                 "Strict reporting",
                 ["python", "reporting.py"],
                 status="passed",
                 exit_code=0,
+                started_at="2026-04-10T12:00:02+00:00",
+                finished_at="2026-04-10T12:00:03+00:00",
+                duration_seconds=1.0,
             ),
         ]
 
-        summary = self_check.build_summary(Path("/repo"), args, step_results, 1)
+        summary = self_check.build_summary(
+            Path("/repo"),
+            args,
+            step_results,
+            1,
+            "2026-04-10T12:00:00+00:00",
+            "2026-04-10T12:00:03+00:00",
+            3.0,
+        )
 
         self.assertEqual(summary["overall_status"], "fail")
         self.assertFalse(summary["overall_passed"])
@@ -163,10 +188,16 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertEqual(summary["reporting_markdown_output_path"], "/repo/custom/report.md")
         self.assertEqual(summary["self_check_summary_path"], "/repo/custom/self_check.json")
         self.assertEqual(summary["self_check_summary_markdown_path"], "/repo/custom/self_check.md")
+        self.assertEqual(summary["started_at"], "2026-04-10T12:00:00+00:00")
+        self.assertEqual(summary["finished_at"], "2026-04-10T12:00:03+00:00")
+        self.assertEqual(summary["duration_seconds"], 3.0)
 
     def test_build_summary_markdown_includes_step_details(self) -> None:
         summary = {
             "generated_at": "2026-04-10T12:00:00+00:00",
+            "started_at": "2026-04-10T12:00:00+00:00",
+            "finished_at": "2026-04-10T12:00:03+00:00",
+            "duration_seconds": 3.0,
             "repo_root": "/repo",
             "python_executable": "python",
             "keep_going": True,
@@ -190,6 +221,9 @@ class SelfCheckScriptTests(unittest.TestCase):
                     "command_display": "python -m unittest",
                     "status": "failed",
                     "exit_code": 1,
+                    "started_at": "2026-04-10T12:00:00+00:00",
+                    "finished_at": "2026-04-10T12:00:02+00:00",
+                    "duration_seconds": 2.0,
                 },
                 {
                     "label": "Strict reporting",
@@ -197,6 +231,9 @@ class SelfCheckScriptTests(unittest.TestCase):
                     "command_display": "python reporting.py",
                     "status": "passed",
                     "exit_code": 0,
+                    "started_at": "2026-04-10T12:00:02+00:00",
+                    "finished_at": "2026-04-10T12:00:03+00:00",
+                    "duration_seconds": 1.0,
                 },
             ],
         }
@@ -205,8 +242,10 @@ class SelfCheckScriptTests(unittest.TestCase):
 
         self.assertIn("# Self-Check Summary", markdown)
         self.assertIn("- Overall status: `FAIL`", markdown)
+        self.assertIn("- Duration seconds: `3.0`", markdown)
         self.assertIn("### `Unit tests`", markdown)
         self.assertIn("- Status: `FAILED`", markdown)
+        self.assertIn("- Started at: `2026-04-10T12:00:00+00:00`", markdown)
         self.assertIn("- Command: `python -m unittest`", markdown)
 
     def test_write_summary_creates_parent_directory(self) -> None:
@@ -228,6 +267,9 @@ class SelfCheckScriptTests(unittest.TestCase):
             markdown_path = Path(tempdir) / "artifacts" / "self_check_summary.md"
             summary = {
                 "generated_at": "2026-04-10T12:00:00+00:00",
+                "started_at": "2026-04-10T12:00:00+00:00",
+                "finished_at": "2026-04-10T12:00:00+00:00",
+                "duration_seconds": 0.0,
                 "repo_root": "/repo",
                 "python_executable": "python",
                 "keep_going": False,
