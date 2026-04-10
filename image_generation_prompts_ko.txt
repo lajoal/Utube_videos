@@ -1,0 +1,11 @@
+[scene_01_intro]
+현대적인 모션 그래픽 스타일의 오프닝 화면. 어두운 배경 위에 청록색과 주황색 포인트 라이트, 한국어 타이틀 텍스트가 중앙에 등장, cinematic lighting, high contrast, clean composition.
+
+[scene_02_problem]
+복잡한 정보가 화면을 가득 채우고 있는 책상 위 장면. 노트북, 메모지, 그래프가 보이며 인물이 해결책을 찾는 분위기. realistic editorial illustration, soft shadows, detailed desk texture.
+
+[scene_03_solution]
+AI 도구가 자동으로 장면, 내레이션, 렌더 계획을 정리해 주는 대시보드 화면. futuristic interface, blue accents, balanced layout, professional product visualization.
+
+[scene_04_outro]
+마무리 콜투액션 화면. 구독과 다음 영상을 안내하는 깔끔한 카드 UI, 밝고 희망적인 조명, minimal background, polished YouTube end screen aesthetic.

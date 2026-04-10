@@ -1,0 +1,47 @@
+{
+  "project": "sample_korean_video",
+  "format": {
+    "resolution": "1920x1080",
+    "fps": 30,
+    "aspect_ratio": "16:9"
+  },
+  "audio": {
+    "voice_script_path": "tts_script_ko.txt",
+    "background_music": "uplifting_corporate",
+    "voice_language": "ko-KR"
+  },
+  "assets": {
+    "image_prompt_path": "image_generation_prompts_ko.txt",
+    "scene_prompt_path": "scene_prompts.json"
+  },
+  "timeline": [
+    {
+      "scene_id": "scene_01",
+      "start_seconds": 0,
+      "duration_seconds": 6,
+      "transition": "fade_in"
+    },
+    {
+      "scene_id": "scene_02",
+      "start_seconds": 6,
+      "duration_seconds": 8,
+      "transition": "cut"
+    },
+    {
+      "scene_id": "scene_03",
+      "start_seconds": 14,
+      "duration_seconds": 10,
+      "transition": "slide_left"
+    },
+    {
+      "scene_id": "scene_04",
+      "start_seconds": 24,
+      "duration_seconds": 6,
+      "transition": "fade_out"
+    }
+  ],
+  "output": {
+    "video_file": "final_video.mp4",
+    "report_file": "reporting_output.json"
+  }
+}
