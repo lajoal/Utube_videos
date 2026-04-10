@@ -36,14 +36,14 @@ You can also load targets from another file and write the report to a custom loc
 python reporting.py --targets-file config/targets.txt --output artifacts/report.json
 ```
 
-The generated report includes the resolved target list, the `target_source` used for that run, and per-file validation issues.
+The generated report includes the resolved target list, the `target_source` used for that run, per-file validation issues, and a `cross_validation_issue_count` for file-to-file checks.
 
 ## Validation rules
 The reporting flow validates more than file existence.
 - `image_generation_prompts_ko.txt`: must be non-empty and include at least one scene label such as `[scene_01_intro]`
 - `tts_script_ko.txt`: must be non-empty and contain at least two non-empty lines
 - `scene_prompts.json`: checks project metadata, scene structure, positive durations, and unique `scene_id` values
-- `render_plan.json`: checks render metadata, referenced asset files, timeline structure, positive durations, and contiguous `start_seconds`
+- `render_plan.json`: checks render metadata, referenced asset files, timeline structure, positive durations, contiguous `start_seconds`, and cross-validates `scene_id` order and durations against `scene_prompts.json`
 
 The scanner skips common cache and virtual environment directories by default:
 - `.git`

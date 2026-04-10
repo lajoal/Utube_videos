@@ -42,7 +42,13 @@ class FileReport:
     json_summary: dict[str, Any] | None
     validation_issues: list[str]
 
-    def as_dict(self) -> dict[str, Any]:
+    def as_dict(
+        self, extra_validation_issues: list[str] | None = None
+    ) -> dict[str, Any]:
+        combined_issues = merge_issues(
+            self.validation_issues,
+            extra_validation_issues,
+        )
         return {
             "name": self.name,
             "path": self.path,
@@ -52,8 +58,8 @@ class FileReport:
             "line_count": self.line_count,
             "preview": self.preview,
             "json_summary": self.json_summary,
-            "validation_issue_count": len(self.validation_issues),
-            "validation_issues": self.validation_issues,
+            "validation_issue_count": len(combined_issues),
+            "validation_issues": combined_issues,
         }
 
 
@@ -129,6 +135,16 @@ def safe_read_text(path: Path) -> str | None:
             return None
 
 
+def load_json_file(path: Path) -> Any | None:
+    text = safe_read_text(path)
+    if text is None:
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return None
+
+
 def load_targets_file(path: Path) -> list[str]:
     targets: list[str] = []
     for line in path.read_text(encoding="utf-8").splitlines():
@@ -201,6 +217,31 @@ def is_non_negative_number(value: Any) -> bool:
 
 def numbers_equal(left: float, right: float, tolerance: float = 1e-9) -> bool:
     return abs(left - right) <= tolerance
+
+
+def merge_issues(*issue_groups: list[str] | None) -> list[str]:
+    merged: list[str] = []
+    seen: set[str] = set()
+
+    for issue_group in issue_groups:
+        if not issue_group:
+            continue
+        for issue in issue_group:
+            if issue not in seen:
+                seen.add(issue)
+                merged.append(issue)
+
+    return merged
+
+
+def unique_strings_in_order(values: list[str]) -> list[str]:
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if value not in seen:
+            seen.add(value)
+            ordered.append(value)
+    return ordered
 
 
 def summarize_json(data: Any) -> dict[str, Any]:
@@ -407,6 +448,169 @@ def validate_json_target(filename: str, data: Any, root: Path) -> list[str]:
     return []
 
 
+def collect_scene_prompts_summary(data: Any) -> tuple[list[str], dict[str, float]]:
+    if not isinstance(data, dict):
+        return [], {}
+
+    scene_ids: list[str] = []
+    durations: dict[str, float] = {}
+    scenes = data.get("scenes")
+    if not isinstance(scenes, list):
+        return scene_ids, durations
+
+    for scene in scenes:
+        if not isinstance(scene, dict):
+            continue
+        scene_id = scene.get("scene_id")
+        if not is_non_empty_string(scene_id):
+            continue
+        scene_ids.append(scene_id)
+        duration = scene.get("duration_seconds")
+        if is_positive_number(duration):
+            durations[scene_id] = float(duration)
+
+    return scene_ids, durations
+
+
+def collect_render_timeline_summary(data: Any) -> tuple[list[str], dict[str, float]]:
+    if not isinstance(data, dict):
+        return [], {}
+
+    scene_ids: list[str] = []
+    durations: dict[str, float] = {}
+    timeline = data.get("timeline")
+    if not isinstance(timeline, list):
+        return scene_ids, durations
+
+    for entry in timeline:
+        if not isinstance(entry, dict):
+            continue
+        scene_id = entry.get("scene_id")
+        if not is_non_empty_string(scene_id):
+            continue
+        scene_ids.append(scene_id)
+        duration = entry.get("duration_seconds")
+        if is_positive_number(duration):
+            durations[scene_id] = float(duration)
+
+    return scene_ids, durations
+
+
+def validate_render_plan_scene_alignment(
+    render_plan_data: Any,
+    scene_prompts_data: Any,
+    scene_prompt_reference: str,
+) -> list[str]:
+    if not isinstance(render_plan_data, dict) or not isinstance(scene_prompts_data, dict):
+        return []
+
+    issues: list[str] = []
+    render_project = render_plan_data.get("project")
+    scene_project = scene_prompts_data.get("project")
+    if (
+        is_non_empty_string(render_project)
+        and is_non_empty_string(scene_project)
+        and render_project != scene_project
+    ):
+        issues.append(
+            "Cross validation: render_plan.json project does not match "
+            f"{scene_prompt_reference} project."
+        )
+
+    scene_prompt_ids, scene_prompt_durations = collect_scene_prompts_summary(
+        scene_prompts_data
+    )
+    timeline_ids, timeline_durations = collect_render_timeline_summary(
+        render_plan_data
+    )
+
+    if not scene_prompt_ids or not timeline_ids:
+        return issues
+
+    timeline_id_set = set(timeline_ids)
+    scene_prompt_id_set = set(scene_prompt_ids)
+
+    missing_in_timeline = unique_strings_in_order(
+        [scene_id for scene_id in scene_prompt_ids if scene_id not in timeline_id_set]
+    )
+    extra_in_timeline = unique_strings_in_order(
+        [scene_id for scene_id in timeline_ids if scene_id not in scene_prompt_id_set]
+    )
+
+    if missing_in_timeline:
+        issues.append(
+            "Cross validation: render_plan timeline is missing scene_ids from "
+            f"{scene_prompt_reference}: {', '.join(missing_in_timeline)}."
+        )
+    if extra_in_timeline:
+        issues.append(
+            "Cross validation: render_plan timeline includes unknown scene_ids "
+            f"for {scene_prompt_reference}: {', '.join(extra_in_timeline)}."
+        )
+    if not missing_in_timeline and not extra_in_timeline and timeline_ids != scene_prompt_ids:
+        issues.append(
+            "Cross validation: render_plan timeline scene order does not match "
+            f"{scene_prompt_reference}."
+        )
+
+    for scene_id in scene_prompt_ids:
+        if scene_id not in timeline_durations or scene_id not in scene_prompt_durations:
+            continue
+        scene_duration = scene_prompt_durations[scene_id]
+        timeline_duration = timeline_durations[scene_id]
+        if not numbers_equal(scene_duration, timeline_duration):
+            issues.append(
+                "Cross validation: render_plan timeline duration_seconds for "
+                f"'{scene_id}' ({timeline_duration:g}) does not match "
+                f"{scene_prompt_reference} ({scene_duration:g})."
+            )
+
+    return issues
+
+
+def compute_cross_validation_issues(
+    root: Path,
+    grouped: dict[str, list[FileReport]],
+) -> dict[str, list[str]]:
+    issues_by_path: dict[str, list[str]] = {}
+
+    for reports in grouped.values():
+        for report in reports:
+            if report.name != "render_plan.json":
+                continue
+
+            render_plan_path = root / report.path
+            render_plan_data = load_json_file(render_plan_path)
+            if not isinstance(render_plan_data, dict):
+                continue
+
+            assets = render_plan_data.get("assets")
+            if not isinstance(assets, dict):
+                continue
+
+            scene_prompt_reference = assets.get("scene_prompt_path")
+            if not is_non_empty_string(scene_prompt_reference):
+                continue
+
+            scene_prompt_path = root / scene_prompt_reference
+            if not scene_prompt_path.is_file():
+                continue
+
+            scene_prompts_data = load_json_file(scene_prompt_path)
+            issues = validate_render_plan_scene_alignment(
+                render_plan_data,
+                scene_prompts_data,
+                scene_prompt_reference,
+            )
+            if issues:
+                issues_by_path[report.path] = merge_issues(
+                    issues_by_path.get(report.path),
+                    issues,
+                )
+
+    return issues_by_path
+
+
 def build_file_report(path: Path, root: Path, preview_lines: int) -> FileReport:
     kind = detect_kind(path)
     text = safe_read_text(path) if kind in {"text", "json"} else None
@@ -485,15 +689,26 @@ def build_output(
     target_source: str,
     excluded_dirs: set[str] | None = None,
 ) -> dict[str, Any]:
+    cross_validation_issues = compute_cross_validation_issues(root, grouped)
     all_reports = [item for files in grouped.values() for item in files]
+    combined_issues_by_path = {
+        item.path: merge_issues(
+            item.validation_issues,
+            cross_validation_issues.get(item.path),
+        )
+        for item in all_reports
+    }
     report_count = len(all_reports)
     matched_names = {item.name for item in all_reports}
     missing_targets = sorted(target for target in targets if target not in matched_names)
     files_with_issues = sorted(
-        item.path for item in all_reports if item.validation_issues
+        path for path, issues in combined_issues_by_path.items() if issues
     )
     validation_issue_count = sum(
-        len(item.validation_issues) for item in all_reports
+        len(issues) for issues in combined_issues_by_path.values()
+    )
+    cross_validation_issue_count = sum(
+        len(issues) for issues in cross_validation_issues.values()
     )
 
     return {
@@ -505,9 +720,13 @@ def build_output(
         "matched_file_count": report_count,
         "missing_targets": missing_targets,
         "validation_issue_count": validation_issue_count,
+        "cross_validation_issue_count": cross_validation_issue_count,
         "files_with_issues": files_with_issues,
         "directories": {
-            directory: [item.as_dict() for item in files]
+            directory: [
+                item.as_dict(cross_validation_issues.get(item.path))
+                for item in files
+            ]
             for directory, files in grouped.items()
         },
     }
@@ -519,6 +738,7 @@ def print_summary(output: dict[str, Any]) -> None:
     print(f"Target filenames: {len(output['targets'])}")
     print(f"Matched files: {output['matched_file_count']}")
     print(f"Validation issues: {output['validation_issue_count']}")
+    print(f"Cross validation issues: {output['cross_validation_issue_count']}")
 
     excluded = output["excluded_directories"]
     if excluded:
