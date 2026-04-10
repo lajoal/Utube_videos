@@ -22,7 +22,7 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Run reporting smoke check
-        run: python reporting.py --fail-on-missing --output artifacts/reporting_output.json
+        run: python reporting.py --fail-on-missing --fail-on-validation-issues --output artifacts/reporting_output.json
 
       - name: Upload reporting artifact
         if: always()

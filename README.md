@@ -24,10 +24,10 @@ This writes `reporting_output.json` and prints a summary of the matching files.
 
 By default, the script loads its target filenames from `reporting_targets.txt`. If that file is missing, it falls back to the built-in default list in `reporting.py`.
 
-For automation and CI, fail the run when one or more targets are missing:
+For automation and CI, fail the run when one or more targets are missing or when validation issues are found:
 
 ```bash
-python reporting.py --fail-on-missing
+python reporting.py --fail-on-missing --fail-on-validation-issues
 ```
 
 You can also load targets from another file and write the report to a custom location:
@@ -36,7 +36,14 @@ You can also load targets from another file and write the report to a custom loc
 python reporting.py --targets-file config/targets.txt --output artifacts/report.json
 ```
 
-The generated report includes both the resolved target list and the `target_source` used for that run.
+The generated report includes the resolved target list, the `target_source` used for that run, and per-file validation issues.
+
+## Validation rules
+The reporting flow validates more than file existence.
+- `image_generation_prompts_ko.txt`: must be non-empty and include at least one scene label such as `[scene_01_intro]`
+- `tts_script_ko.txt`: must be non-empty and contain at least two non-empty lines
+- `scene_prompts.json`: checks project metadata, scene structure, positive durations, and unique `scene_id` values
+- `render_plan.json`: checks render metadata, referenced asset files, timeline structure, positive durations, and contiguous `start_seconds`
 
 The scanner skips common cache and virtual environment directories by default:
 - `.git`
@@ -65,4 +72,4 @@ Run the built-in unit tests from the repository root:
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-GitHub Actions runs the test suite, performs a reporting smoke check, and uploads the generated report as a workflow artifact on pushes to `main` and on pull requests.
+GitHub Actions runs the test suite, performs a strict reporting smoke check, and uploads the generated report as a workflow artifact on pushes to `main` and on pull requests.
