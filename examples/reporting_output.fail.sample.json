@@ -1,0 +1,86 @@
+{
+  "generated_at": "2026-04-10T04:35:00+00:00",
+  "scan_root": "/workspace/Utube_videos",
+  "targets": [
+    "image_generation_prompts_ko.txt",
+    "tts_script_ko.txt",
+    "scene_prompts.json",
+    "render_plan.json"
+  ],
+  "target_source": "default_manifest",
+  "excluded_directories": [
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".venv",
+    "__pycache__",
+    "venv"
+  ],
+  "matched_file_count": 3,
+  "missing_targets": [
+    "render_plan.json"
+  ],
+  "validation_issue_count": 3,
+  "cross_validation_issue_count": 2,
+  "files_with_issues": [
+    "image_generation_prompts_ko.txt",
+    "tts_script_ko.txt"
+  ],
+  "overall_passed": false,
+  "overall_status": "fail",
+  "json_report_path": "/workspace/Utube_videos/reporting_output.json",
+  "markdown_summary_path": "/workspace/Utube_videos/reporting_summary.md",
+  "directories": {
+    ".": [
+      {
+        "name": "image_generation_prompts_ko.txt",
+        "path": "image_generation_prompts_ko.txt",
+        "size_bytes": 610,
+        "modified_at": "2026-04-10T04:25:00+00:00",
+        "kind": "text",
+        "line_count": 9,
+        "preview": "[scene_02_problem]\n복잡한 정보가 화면을 가득 채우고 있는 책상 위 장면.\n",
+        "json_summary": null,
+        "validation_issue_count": 1,
+        "validation_issues": [
+          "Cross validation: image prompt label order does not match scene_prompts.json."
+        ]
+      },
+      {
+        "name": "tts_script_ko.txt",
+        "path": "tts_script_ko.txt",
+        "size_bytes": 390,
+        "modified_at": "2026-04-10T04:25:00+00:00",
+        "kind": "text",
+        "line_count": 9,
+        "preview": "[scene_01_intro]\n짧은 소개입니다.\n",
+        "json_summary": null,
+        "validation_issue_count": 2,
+        "validation_issues": [
+          "Cross validation: TTS labels are missing scene_ids from scene_prompts.json: scene_03, scene_04.",
+          "Cross validation: TTS section 'scene_01_intro' may be too short for its scene duration (0.9 chars/s)."
+        ]
+      },
+      {
+        "name": "scene_prompts.json",
+        "path": "scene_prompts.json",
+        "size_bytes": 1240,
+        "modified_at": "2026-04-10T04:25:00+00:00",
+        "kind": "json",
+        "line_count": 34,
+        "preview": null,
+        "json_summary": {
+          "type": "object",
+          "top_level_keys": [
+            "project",
+            "language",
+            "scenes"
+          ],
+          "top_level_key_count": 3
+        },
+        "validation_issue_count": 0,
+        "validation_issues": []
+      }
+    ]
+  }
+}

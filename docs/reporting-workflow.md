@@ -62,8 +62,10 @@ python reporting.py \
 Sample outputs are checked into the repository here:
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
+- `examples/reporting_output.fail.sample.json`
+- `examples/reporting_summary.fail.sample.md`
 
-These examples show the shape of a successful reporting run.
+Use the `sample` files to see a clean run and the `fail.sample` files to see how missing targets and validation issues appear in the reports.
 
 ## What Gets Validated
 
