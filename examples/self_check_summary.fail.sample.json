@@ -18,6 +18,13 @@
   "completed_step_count": 1,
   "failed_step_count": 1,
   "skipped_step_count": 1,
+  "passed_steps": [],
+  "failed_steps": [
+    "Unit tests"
+  ],
+  "skipped_steps": [
+    "Strict reporting"
+  ],
   "overall_passed": false,
   "overall_status": "fail",
   "exit_code": 1,

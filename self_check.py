@@ -198,6 +198,10 @@ def run_commands(
     return first_failure, step_results
 
 
+def format_step_labels(labels: list[str]) -> str:
+    return ", ".join(labels) if labels else "None"
+
+
 def build_summary(
     repo_root: Path,
     args: argparse.Namespace,
@@ -217,9 +221,12 @@ def build_summary(
         if args.skip_report
         else resolve_output_path(repo_root, args.markdown_output)
     )
-    failed_step_count = sum(1 for item in step_results if item["status"] == "failed")
-    skipped_step_count = sum(1 for item in step_results if item["status"] == "skipped")
-    completed_step_count = sum(1 for item in step_results if item["status"] != "skipped")
+    passed_steps = [item["label"] for item in step_results if item["status"] == "passed"]
+    failed_steps = [item["label"] for item in step_results if item["status"] == "failed"]
+    skipped_steps = [item["label"] for item in step_results if item["status"] == "skipped"]
+    failed_step_count = len(failed_steps)
+    skipped_step_count = len(skipped_steps)
+    completed_step_count = len(step_results) - skipped_step_count
     overall_passed = exit_code == 0
 
     return {
@@ -242,6 +249,9 @@ def build_summary(
         "completed_step_count": completed_step_count,
         "failed_step_count": failed_step_count,
         "skipped_step_count": skipped_step_count,
+        "passed_steps": passed_steps,
+        "failed_steps": failed_steps,
+        "skipped_steps": skipped_steps,
         "overall_passed": overall_passed,
         "overall_status": "pass" if overall_passed else "fail",
         "exit_code": exit_code,
@@ -268,6 +278,9 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
         f"- Completed steps: `{summary['completed_step_count']}`",
         f"- Failed steps: `{summary['failed_step_count']}`",
         f"- Skipped steps: `{summary['skipped_step_count']}`",
+        f"- Passed step labels: `{format_step_labels(summary['passed_steps'])}`",
+        f"- Failed step labels: `{format_step_labels(summary['failed_steps'])}`",
+        f"- Skipped step labels: `{format_step_labels(summary['skipped_steps'])}`",
         f"- Exit code: `{summary['exit_code']}`",
         f"- JSON summary: `{summary['self_check_summary_path']}`",
         f"- Markdown summary: `{summary['self_check_summary_markdown_path']}`",

@@ -15,6 +15,9 @@
 - Completed steps: `1`
 - Failed steps: `1`
 - Skipped steps: `1`
+- Passed step labels: `None`
+- Failed step labels: `Unit tests`
+- Skipped step labels: `Strict reporting`
 - Exit code: `1`
 - JSON summary: `/workspace/Utube_videos/artifacts/self_check_summary.json`
 - Markdown summary: `/workspace/Utube_videos/artifacts/self_check_summary.md`

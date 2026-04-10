@@ -133,7 +133,7 @@ class SelfCheckScriptTests(unittest.TestCase):
             all(isinstance(item["duration_seconds"], float) for item in step_results)
         )
 
-    def test_build_summary_includes_step_counts_paths_timing_and_artifact_presence(self) -> None:
+    def test_build_summary_includes_label_lists_counts_paths_timing_and_artifact_presence(self) -> None:
         args = self_check.parse_args(
             [
                 "--keep-going",
@@ -184,6 +184,9 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertEqual(summary["skipped_step_count"], 0)
         self.assertEqual(summary["completed_step_count"], 2)
         self.assertEqual(summary["selected_step_count"], 2)
+        self.assertEqual(summary["passed_steps"], ["Strict reporting"])
+        self.assertEqual(summary["failed_steps"], ["Unit tests"])
+        self.assertEqual(summary["skipped_steps"], [])
         self.assertEqual(summary["reporting_output_path"], "/repo/custom/report.json")
         self.assertEqual(summary["reporting_markdown_output_path"], "/repo/custom/report.md")
         self.assertFalse(summary["reporting_output_exists"])
@@ -211,8 +214,11 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertIsNone(summary["reporting_markdown_output_path"])
         self.assertIsNone(summary["reporting_output_exists"])
         self.assertIsNone(summary["reporting_markdown_output_exists"])
+        self.assertEqual(summary["passed_steps"], [])
+        self.assertEqual(summary["failed_steps"], [])
+        self.assertEqual(summary["skipped_steps"], [])
 
-    def test_build_summary_markdown_includes_step_details_and_artifact_presence(self) -> None:
+    def test_build_summary_markdown_includes_step_details_artifact_presence_and_label_lists(self) -> None:
         summary = {
             "generated_at": "2026-04-10T12:00:00+00:00",
             "started_at": "2026-04-10T12:00:00+00:00",
@@ -233,6 +239,9 @@ class SelfCheckScriptTests(unittest.TestCase):
             "completed_step_count": 2,
             "failed_step_count": 1,
             "skipped_step_count": 0,
+            "passed_steps": ["Strict reporting"],
+            "failed_steps": ["Unit tests"],
+            "skipped_steps": [],
             "overall_passed": False,
             "overall_status": "fail",
             "exit_code": 1,
@@ -267,6 +276,9 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertIn("- Duration seconds: `3.0`", markdown)
         self.assertIn("- Reporting JSON exists: `False`", markdown)
         self.assertIn("- Reporting Markdown exists: `True`", markdown)
+        self.assertIn("- Passed step labels: `Strict reporting`", markdown)
+        self.assertIn("- Failed step labels: `Unit tests`", markdown)
+        self.assertIn("- Skipped step labels: `None`", markdown)
         self.assertIn("### `Unit tests`", markdown)
         self.assertIn("- Status: `FAILED`", markdown)
         self.assertIn("- Started at: `2026-04-10T12:00:00+00:00`", markdown)
@@ -309,6 +321,9 @@ class SelfCheckScriptTests(unittest.TestCase):
                 "completed_step_count": 0,
                 "failed_step_count": 0,
                 "skipped_step_count": 0,
+                "passed_steps": [],
+                "failed_steps": [],
+                "skipped_steps": [],
                 "overall_passed": True,
                 "overall_status": "pass",
                 "exit_code": 0,

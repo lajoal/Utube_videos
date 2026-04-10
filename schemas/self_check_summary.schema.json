@@ -24,6 +24,9 @@
     "completed_step_count",
     "failed_step_count",
     "skipped_step_count",
+    "passed_steps",
+    "failed_steps",
+    "skipped_steps",
     "overall_passed",
     "overall_status",
     "exit_code",
@@ -94,6 +97,24 @@
     "skipped_step_count": {
       "type": "integer",
       "minimum": 0
+    },
+    "passed_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "failed_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "skipped_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "overall_passed": {
       "type": "boolean"
