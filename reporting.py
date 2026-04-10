@@ -15,6 +15,7 @@ DEFAULT_REPORTING_TARGETS = [
     "scene_prompts.json",
     "render_plan.json",
 ]
+DEFAULT_TARGETS_MANIFEST = "reporting_targets.txt"
 
 DEFAULT_EXCLUDED_DIRS = {
     ".git",
@@ -130,19 +131,41 @@ def load_targets_file(path: Path) -> list[str]:
     return targets
 
 
+def resolve_targets_file_path(root: Path, targets_file: str) -> Path:
+    path = Path(targets_file)
+    if path.is_absolute():
+        return path
+    return root / path
+
+
 def resolve_targets(
-    explicit_targets: list[str] | None, targets_file: str | None
-) -> list[str]:
+    root: Path,
+    explicit_targets: list[str] | None,
+    targets_file: str | None,
+) -> tuple[list[str], str]:
     targets: list[str] = []
+    source_parts: list[str] = []
 
     if explicit_targets:
         targets.extend(explicit_targets)
-    if targets_file:
-        targets.extend(load_targets_file(Path(targets_file)))
-    if not targets:
-        targets = DEFAULT_REPORTING_TARGETS.copy()
+        source_parts.append("cli")
 
-    return list(dict.fromkeys(targets))
+    if targets_file:
+        targets.extend(load_targets_file(resolve_targets_file_path(root, targets_file)))
+        source_parts.append("targets_file")
+
+    if not targets:
+        manifest_path = root / DEFAULT_TARGETS_MANIFEST
+        if manifest_path.is_file():
+            targets = load_targets_file(manifest_path)
+            source = "default_manifest"
+        else:
+            targets = DEFAULT_REPORTING_TARGETS.copy()
+            source = "built_in_defaults"
+    else:
+        source = "+".join(source_parts)
+
+    return list(dict.fromkeys(targets)), source
 
 
 def normalize_excluded_dirs(extra_dirs: list[str] | None) -> set[str]:
@@ -237,6 +260,7 @@ def build_output(
     root: Path,
     targets: list[str],
     grouped: dict[str, list[FileReport]],
+    target_source: str,
     excluded_dirs: set[str] | None = None,
 ) -> dict[str, Any]:
     report_count = sum(len(files) for files in grouped.values())
@@ -247,6 +271,7 @@ def build_output(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "scan_root": str(root.resolve()),
         "targets": targets,
+        "target_source": target_source,
         "excluded_directories": sorted(excluded_dirs or set()),
         "matched_file_count": report_count,
         "missing_targets": missing_targets,
@@ -259,6 +284,7 @@ def build_output(
 
 def print_summary(output: dict[str, Any]) -> None:
     print(f"Scan root: {output['scan_root']}")
+    print(f"Target source: {output['target_source']}")
     print(f"Target filenames: {len(output['targets'])}")
     print(f"Matched files: {output['matched_file_count']}")
 
@@ -286,10 +312,10 @@ def print_summary(output: dict[str, Any]) -> None:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     root = Path(args.root).resolve()
-    targets = resolve_targets(args.targets, args.targets_file)
+    targets, target_source = resolve_targets(root, args.targets, args.targets_file)
     excluded_dirs = normalize_excluded_dirs(args.exclude_dirs)
     grouped = collect_reports(root, targets, args.preview_lines, excluded_dirs)
-    output = build_output(root, targets, grouped, excluded_dirs)
+    output = build_output(root, targets, grouped, target_source, excluded_dirs)
 
     output_path = Path(args.output)
     if not output_path.is_absolute():

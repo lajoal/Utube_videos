@@ -41,6 +41,17 @@ class ReportingTests(unittest.TestCase):
 
         self.assertEqual(targets, ["image_generation_prompts_ko.txt", "render_plan.json"])
 
+    def test_resolve_targets_uses_default_manifest_when_present(self) -> None:
+        self.write_file(
+            reporting.DEFAULT_TARGETS_MANIFEST,
+            "tts_script_ko.txt\nrender_plan.json\n",
+        )
+
+        targets, source = reporting.resolve_targets(self.root, None, None)
+
+        self.assertEqual(targets, ["tts_script_ko.txt", "render_plan.json"])
+        self.assertEqual(source, "default_manifest")
+
     def test_collect_reports_groups_matches_by_directory(self) -> None:
         self.write_file(
             "image_generation_prompts_ko.txt",
@@ -103,10 +114,12 @@ class ReportingTests(unittest.TestCase):
             self.root,
             reporting.DEFAULT_REPORTING_TARGETS,
             grouped,
+            target_source="built_in_defaults",
             excluded_dirs={".git", "__pycache__"},
         )
 
         self.assertEqual(output["matched_file_count"], 1)
+        self.assertEqual(output["target_source"], "built_in_defaults")
         self.assertIn("image_generation_prompts_ko.txt", output["missing_targets"])
         self.assertIn("scene_prompts.json", output["missing_targets"])
         self.assertIn("render_plan.json", output["missing_targets"])
@@ -118,8 +131,8 @@ class ReportingTests(unittest.TestCase):
 
     def test_main_returns_non_zero_when_fail_on_missing_is_enabled(self) -> None:
         self.write_file("tts_script_ko.txt", "sample narration")
-        target_file = self.write_file(
-            "targets.txt",
+        self.write_file(
+            "config/targets.txt",
             "tts_script_ko.txt\nscene_prompts.json\n",
         )
 
@@ -130,7 +143,7 @@ class ReportingTests(unittest.TestCase):
                 "--output",
                 "artifacts/report.json",
                 "--targets-file",
-                str(target_file),
+                "config/targets.txt",
                 "--fail-on-missing",
             ]
         )
@@ -143,6 +156,7 @@ class ReportingTests(unittest.TestCase):
             output["targets"],
             ["tts_script_ko.txt", "scene_prompts.json"],
         )
+        self.assertEqual(output["target_source"], "targets_file")
         self.assertEqual(output["missing_targets"], ["scene_prompts.json"])
 
 

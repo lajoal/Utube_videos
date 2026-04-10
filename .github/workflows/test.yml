@@ -22,4 +22,12 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Run reporting smoke check
-        run: python reporting.py --fail-on-missing
+        run: python reporting.py --fail-on-missing --output artifacts/reporting_output.json
+
+      - name: Upload reporting artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporting-output
+          path: artifacts/reporting_output.json
+          if-no-files-found: error

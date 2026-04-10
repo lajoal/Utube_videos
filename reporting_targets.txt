@@ -1,0 +1,5 @@
+# Default reporting targets
+image_generation_prompts_ko.txt
+tts_script_ko.txt
+scene_prompts.json
+render_plan.json
