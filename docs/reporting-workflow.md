@@ -57,23 +57,6 @@ python reporting.py \
   --markdown-output artifacts/report.md
 ```
 
-## Output Schema
-
-The JSON report structure is documented here:
-- `schemas/reporting_output.schema.json`
-
-This schema is useful when another tool needs to validate or parse `reporting_output.json` programmatically.
-
-## Example Outputs
-
-Sample outputs are checked into the repository here:
-- `examples/reporting_output.sample.json`
-- `examples/reporting_summary.sample.md`
-- `examples/reporting_output.fail.sample.json`
-- `examples/reporting_summary.fail.sample.md`
-
-Use the `sample` files to see a clean run and the `fail.sample` files to see how missing targets and validation issues appear in the reports.
-
 ## What Gets Validated
 
 `image_generation_prompts_ko.txt`
