@@ -33,7 +33,7 @@ class ReportingTests(unittest.TestCase):
         )
         self.write_file(
             "tts_script_ko.txt",
-            "제목: 테스트\n두 번째 문단입니다.\n",
+            "[scene_01_intro]\n이번 영상에서는 AI 기반 제작 흐름을 빠르게 살펴봅니다.\n\n[scene_02_problem]\n기획과 이미지, 편집 정보가 흩어지면 제작 속도가 느려집니다.\n",
         )
 
     def build_scene_prompts_data(
@@ -339,7 +339,7 @@ class ReportingTests(unittest.TestCase):
         )
         self.write_file(
             "tts_script_ko.txt",
-            "제목: 테스트\n두 번째 문단입니다.\n",
+            "[scene_01_intro]\n이번 영상에서는 AI 기반 제작 흐름을 빠르게 살펴봅니다.\n\n[scene_02_problem]\n기획과 이미지, 편집 정보가 흩어지면 제작 속도가 느려집니다.\n",
         )
         self.write_json("scene_prompts.json", self.build_scene_prompts_data())
         self.write_json("render_plan.json", self.build_render_plan_data())
@@ -365,6 +365,78 @@ class ReportingTests(unittest.TestCase):
             any(
                 "image prompt label order does not match" in issue
                 for issue in image_prompt_entry["validation_issues"]
+            )
+        )
+
+    def test_build_output_detects_tts_scene_alignment_issues(self) -> None:
+        self.write_file(
+            "image_generation_prompts_ko.txt",
+            "[scene_01_intro]\n밝은 인트로 장면\n\n[scene_02_problem]\n문제 정의 장면\n",
+        )
+        self.write_file(
+            "tts_script_ko.txt",
+            "[scene_02_problem]\n기획과 이미지, 편집 정보가 흩어지면 제작 속도가 느려집니다.\n\n[scene_01_intro]\n이번 영상에서는 AI 기반 제작 흐름을 빠르게 살펴봅니다.\n",
+        )
+        self.write_json("scene_prompts.json", self.build_scene_prompts_data())
+        self.write_json("render_plan.json", self.build_render_plan_data())
+
+        grouped = reporting.collect_reports(
+            self.root,
+            reporting.DEFAULT_REPORTING_TARGETS,
+            preview_lines=3,
+            excluded_dirs=set(),
+        )
+        output = reporting.build_output(
+            self.root,
+            reporting.DEFAULT_REPORTING_TARGETS,
+            grouped,
+            target_source="built_in_defaults",
+            excluded_dirs=set(),
+        )
+
+        self.assertEqual(output["cross_validation_issue_count"], 1)
+        self.assertEqual(output["files_with_issues"], ["tts_script_ko.txt"])
+        tts_entry = self.get_output_entry(output, "tts_script_ko.txt")
+        self.assertTrue(
+            any(
+                "TTS scene label order does not match" in issue
+                for issue in tts_entry["validation_issues"]
+            )
+        )
+
+    def test_build_output_detects_tts_density_issues(self) -> None:
+        self.write_file(
+            "image_generation_prompts_ko.txt",
+            "[scene_01_intro]\n밝은 인트로 장면\n\n[scene_02_problem]\n문제 정의 장면\n",
+        )
+        self.write_file(
+            "tts_script_ko.txt",
+            "[scene_01_intro]\n" + ("아" * 100) + "\n\n[scene_02_problem]\n기획과 이미지 정보가 흩어집니다.\n",
+        )
+        self.write_json("scene_prompts.json", self.build_scene_prompts_data())
+        self.write_json("render_plan.json", self.build_render_plan_data())
+
+        grouped = reporting.collect_reports(
+            self.root,
+            reporting.DEFAULT_REPORTING_TARGETS,
+            preview_lines=3,
+            excluded_dirs=set(),
+        )
+        output = reporting.build_output(
+            self.root,
+            reporting.DEFAULT_REPORTING_TARGETS,
+            grouped,
+            target_source="built_in_defaults",
+            excluded_dirs=set(),
+        )
+
+        self.assertEqual(output["cross_validation_issue_count"], 1)
+        self.assertEqual(output["files_with_issues"], ["tts_script_ko.txt"])
+        tts_entry = self.get_output_entry(output, "tts_script_ko.txt")
+        self.assertTrue(
+            any(
+                "too dense" in issue
+                for issue in tts_entry["validation_issues"]
             )
         )
 

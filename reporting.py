@@ -26,6 +26,9 @@ DEFAULT_EXCLUDED_DIRS = {
     "venv",
 }
 
+MIN_TTS_CHARS_PER_SECOND = 1.5
+MAX_TTS_CHARS_PER_SECOND = 12.0
+
 TEXT_EXTENSIONS = {".txt", ".md", ".log"}
 JSON_EXTENSIONS = {".json"}
 
@@ -279,31 +282,47 @@ def summarize_json(data: Any) -> dict[str, Any]:
     }
 
 
-def parse_scene_labels_from_text(text: str | None) -> list[str]:
-    labels: list[str] = []
+def parse_labeled_sections_from_text(text: str | None) -> list[tuple[str, str]]:
+    sections: list[tuple[str, str]] = []
     if text is None:
-        return labels
+        return sections
 
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("[") or not stripped.endswith("]"):
+    current_label: str | None = None
+    current_lines: list[str] = []
+
+    for raw_line in text.splitlines():
+        stripped = raw_line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if current_label is not None:
+                sections.append((current_label, "\n".join(current_lines).strip()))
+            current_label = stripped[1:-1].strip()
+            current_lines = []
             continue
-        label = stripped[1:-1].strip()
-        if label:
-            labels.append(label)
 
-    return labels
+        if current_label is not None:
+            current_lines.append(raw_line)
+
+    if current_label is not None:
+        sections.append((current_label, "\n".join(current_lines).strip()))
+
+    return [(label, content) for label, content in sections if label]
 
 
-def normalize_prompt_label_to_scene_id(
-    label: str, scene_ids: list[str]
-) -> str | None:
+def parse_scene_labels_from_text(text: str | None) -> list[str]:
+    return [label for label, _ in parse_labeled_sections_from_text(text)]
+
+
+def normalize_label_to_scene_id(label: str, scene_ids: list[str]) -> str | None:
     for scene_id in sorted(scene_ids, key=len, reverse=True):
         if label == scene_id:
             return scene_id
         if label.startswith(f"{scene_id}_") or label.startswith(f"{scene_id}-"):
             return scene_id
     return None
+
+
+def count_non_whitespace_characters(text: str) -> int:
+    return sum(1 for character in text if not character.isspace())
 
 
 def validate_text_target(filename: str, text: str | None) -> list[str]:
@@ -631,7 +650,7 @@ def validate_image_prompt_scene_alignment(
     unknown_labels: list[str] = []
 
     for label in labels:
-        normalized = normalize_prompt_label_to_scene_id(label, scene_prompt_ids)
+        normalized = normalize_label_to_scene_id(label, scene_prompt_ids)
         if normalized is None:
             unknown_labels.append(label)
         else:
@@ -667,6 +686,94 @@ def validate_image_prompt_scene_alignment(
     ):
         issues.append(
             "Cross validation: image prompt label order does not match "
+            f"{scene_prompt_reference}."
+        )
+
+    return issues
+
+
+def validate_tts_scene_alignment(
+    tts_text: str | None,
+    scene_prompts_data: Any,
+    scene_prompt_reference: str,
+) -> list[str]:
+    if tts_text is None or not isinstance(scene_prompts_data, dict):
+        return []
+
+    scene_prompt_ids, scene_prompt_durations = collect_scene_prompts_summary(
+        scene_prompts_data
+    )
+    if not scene_prompt_ids:
+        return []
+
+    sections = parse_labeled_sections_from_text(tts_text)
+    if not sections:
+        return [
+            "Cross validation: TTS script must use scene labels like [scene_01_intro] "
+            f"to align with {scene_prompt_reference}."
+        ]
+
+    issues: list[str] = []
+    normalized_ids: list[str] = []
+    unknown_labels: list[str] = []
+
+    for label, content in sections:
+        normalized = normalize_label_to_scene_id(label, scene_prompt_ids)
+        if normalized is None:
+            unknown_labels.append(label)
+            continue
+
+        normalized_ids.append(normalized)
+        if not content.strip():
+            issues.append(f"Cross validation: TTS section '{label}' is empty.")
+            continue
+
+        duration = scene_prompt_durations.get(normalized)
+        if duration is None or duration <= 0:
+            continue
+
+        density = count_non_whitespace_characters(content) / duration
+        if density < MIN_TTS_CHARS_PER_SECOND:
+            issues.append(
+                "Cross validation: TTS section "
+                f"'{label}' may be too short for its scene duration ({density:.1f} chars/s)."
+            )
+        elif density > MAX_TTS_CHARS_PER_SECOND:
+            issues.append(
+                "Cross validation: TTS section "
+                f"'{label}' may be too dense for its scene duration ({density:.1f} chars/s)."
+            )
+
+    if unknown_labels:
+        issues.append(
+            "Cross validation: TTS labels do not map to scene_ids in "
+            f"{scene_prompt_reference}: {', '.join(unique_strings_in_order(unknown_labels))}."
+        )
+
+    duplicate_scene_ids = find_duplicate_values(normalized_ids)
+    if duplicate_scene_ids:
+        issues.append(
+            "Cross validation: TTS labels map to duplicate scene_ids in "
+            f"{scene_prompt_reference}: {', '.join(duplicate_scene_ids)}."
+        )
+
+    missing_scene_ids = unique_strings_in_order(
+        [scene_id for scene_id in scene_prompt_ids if scene_id not in normalized_ids]
+    )
+    if missing_scene_ids:
+        issues.append(
+            "Cross validation: TTS labels are missing scene_ids from "
+            f"{scene_prompt_reference}: {', '.join(missing_scene_ids)}."
+        )
+
+    if (
+        not unknown_labels
+        and not duplicate_scene_ids
+        and not missing_scene_ids
+        and normalized_ids != scene_prompt_ids
+    ):
+        issues.append(
+            "Cross validation: TTS scene label order does not match "
             f"{scene_prompt_reference}."
         )
 
@@ -714,24 +821,45 @@ def compute_cross_validation_issues(
                 )
 
             image_prompt_reference = assets.get("image_prompt_path")
-            if not is_non_empty_string(image_prompt_reference):
+            if is_non_empty_string(image_prompt_reference):
+                image_prompt_path = root / image_prompt_reference
+                if image_prompt_path.is_file():
+                    image_prompt_text = safe_read_text(image_prompt_path)
+                    image_prompt_issues = validate_image_prompt_scene_alignment(
+                        image_prompt_text,
+                        scene_prompts_data,
+                        scene_prompt_reference,
+                    )
+                    if image_prompt_issues:
+                        image_prompt_key = str(image_prompt_path.relative_to(root))
+                        issues_by_path[image_prompt_key] = merge_issues(
+                            issues_by_path.get(image_prompt_key),
+                            image_prompt_issues,
+                        )
+
+            audio = render_plan_data.get("audio")
+            if not isinstance(audio, dict):
                 continue
 
-            image_prompt_path = root / image_prompt_reference
-            if not image_prompt_path.is_file():
+            tts_reference = audio.get("voice_script_path")
+            if not is_non_empty_string(tts_reference):
                 continue
 
-            image_prompt_text = safe_read_text(image_prompt_path)
-            image_prompt_issues = validate_image_prompt_scene_alignment(
-                image_prompt_text,
+            tts_path = root / tts_reference
+            if not tts_path.is_file():
+                continue
+
+            tts_text = safe_read_text(tts_path)
+            tts_issues = validate_tts_scene_alignment(
+                tts_text,
                 scene_prompts_data,
                 scene_prompt_reference,
             )
-            if image_prompt_issues:
-                image_prompt_key = str(image_prompt_path.relative_to(root))
-                issues_by_path[image_prompt_key] = merge_issues(
-                    issues_by_path.get(image_prompt_key),
-                    image_prompt_issues,
+            if tts_issues:
+                tts_key = str(tts_path.relative_to(root))
+                issues_by_path[tts_key] = merge_issues(
+                    issues_by_path.get(tts_key),
+                    tts_issues,
                 )
 
     return issues_by_path

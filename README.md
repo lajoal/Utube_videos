@@ -41,7 +41,7 @@ The generated report includes the resolved target list, the `target_source` used
 ## Validation rules
 The reporting flow validates more than file existence.
 - `image_generation_prompts_ko.txt`: must be non-empty, include scene labels such as `[scene_01_intro]`, and cross-validate those labels against the `scene_id` list in `scene_prompts.json`
-- `tts_script_ko.txt`: must be non-empty and contain at least two non-empty lines
+- `tts_script_ko.txt`: must be non-empty, use scene labels such as `[scene_01_intro]`, cross-validate label order and coverage against `scene_prompts.json`, and apply a simple narration-density heuristic based on each scene duration
 - `scene_prompts.json`: checks project metadata, scene structure, positive durations, and unique `scene_id` values
 - `render_plan.json`: checks render metadata, referenced asset files, timeline structure, positive durations, contiguous `start_seconds`, and cross-validates `scene_id` order and durations against `scene_prompts.json`
 
