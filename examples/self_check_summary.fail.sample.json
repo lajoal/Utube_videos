@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-04-10T12:15:00+00:00",
+  "repo_root": "/workspace/Utube_videos",
+  "python_executable": "python3.11",
+  "keep_going": false,
+  "skip_tests": false,
+  "skip_report": false,
+  "reporting_output_path": "/workspace/Utube_videos/artifacts/reporting_output.json",
+  "reporting_markdown_output_path": "/workspace/Utube_videos/artifacts/reporting_summary.md",
+  "self_check_summary_path": "/workspace/Utube_videos/artifacts/self_check_summary.json",
+  "self_check_summary_markdown_path": "/workspace/Utube_videos/artifacts/self_check_summary.md",
+  "selected_step_count": 2,
+  "completed_step_count": 1,
+  "failed_step_count": 1,
+  "skipped_step_count": 1,
+  "overall_passed": false,
+  "overall_status": "fail",
+  "exit_code": 1,
+  "steps": [
+    {
+      "label": "Unit tests",
+      "command": [
+        "python3.11",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "command_display": "python3.11 -m unittest discover -s tests -p test_*.py -v",
+      "status": "failed",
+      "exit_code": 1
+    },
+    {
+      "label": "Strict reporting",
+      "command": [
+        "python3.11",
+        "reporting.py",
+        "--fail-on-missing",
+        "--fail-on-validation-issues",
+        "--output",
+        "artifacts/reporting_output.json",
+        "--markdown-output",
+        "artifacts/reporting_summary.md"
+      ],
+      "command_display": "python3.11 reporting.py --fail-on-missing --fail-on-validation-issues --output artifacts/reporting_output.json --markdown-output artifacts/reporting_summary.md",
+      "status": "skipped",
+      "exit_code": null
+    }
+  ]
+}

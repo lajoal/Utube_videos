@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lajoal/Utube_videos/blob/main/schemas/self_check_summary.schema.json",
+  "title": "Self Check Summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generated_at",
+    "repo_root",
+    "python_executable",
+    "keep_going",
+    "skip_tests",
+    "skip_report",
+    "reporting_output_path",
+    "reporting_markdown_output_path",
+    "self_check_summary_path",
+    "self_check_summary_markdown_path",
+    "selected_step_count",
+    "completed_step_count",
+    "failed_step_count",
+    "skipped_step_count",
+    "overall_passed",
+    "overall_status",
+    "exit_code",
+    "steps"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repo_root": {
+      "type": "string"
+    },
+    "python_executable": {
+      "type": "string"
+    },
+    "keep_going": {
+      "type": "boolean"
+    },
+    "skip_tests": {
+      "type": "boolean"
+    },
+    "skip_report": {
+      "type": "boolean"
+    },
+    "reporting_output_path": {
+      "type": ["string", "null"]
+    },
+    "reporting_markdown_output_path": {
+      "type": ["string", "null"]
+    },
+    "self_check_summary_path": {
+      "type": "string"
+    },
+    "self_check_summary_markdown_path": {
+      "type": "string"
+    },
+    "selected_step_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "completed_step_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failed_step_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "skipped_step_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "overall_passed": {
+      "type": "boolean"
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["pass", "fail"]
+    },
+    "exit_code": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stepResult"
+      }
+    }
+  },
+  "$defs": {
+    "stepResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "command",
+        "command_display",
+        "status",
+        "exit_code"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "command_display": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["passed", "failed", "skipped"]
+        },
+        "exit_code": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

@@ -86,10 +86,12 @@ python reporting.py \
 
 ## Output Schema
 
-The JSON report structure is documented here:
+The repository documents both machine-readable artifact contracts:
 - `schemas/reporting_output.schema.json`
+- `schemas/self_check_summary.schema.json`
 
-This schema is useful when another tool needs to validate or parse `reporting_output.json` programmatically.
+Use the reporting schema when another tool needs to validate or parse `reporting_output.json` programmatically.
+Use the self-check schema when another tool needs to consume `self_check_summary.json` as a top-level pipeline status object.
 
 ## Example Outputs
 
@@ -98,8 +100,12 @@ Sample outputs are checked into the repository here:
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
 - `examples/reporting_summary.fail.sample.md`
+- `examples/self_check_summary.sample.json`
+- `examples/self_check_summary.sample.md`
+- `examples/self_check_summary.fail.sample.json`
+- `examples/self_check_summary.fail.sample.md`
 
-Use the `sample` files to see a clean run and the `fail.sample` files to see how missing targets and validation issues appear in the reports.
+Use the `sample` files to see clean runs and the `fail.sample` files to see how missing targets, validation issues, and top-level self-check step failures appear in the artifacts.
 
 ## What Gets Validated
 

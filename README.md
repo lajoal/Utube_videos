@@ -9,11 +9,16 @@ Seed workspace for a Korean video production flow.
 - `config/targets.txt.example`
 - `docs/reporting-workflow.md`
 - `schemas/reporting_output.schema.json`
+- `schemas/self_check_summary.schema.json`
 - `examples/README.md`
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
 - `examples/reporting_summary.fail.sample.md`
+- `examples/self_check_summary.sample.json`
+- `examples/self_check_summary.sample.md`
+- `examples/self_check_summary.fail.sample.json`
+- `examples/self_check_summary.fail.sample.md`
 - `image_generation_prompts_ko.txt`
 - `tts_script_ko.txt`
 - `scene_prompts.json`
@@ -21,6 +26,7 @@ Seed workspace for a Korean video production flow.
 - `tests/test_reporting.py`
 - `tests/test_reporting_examples.py`
 - `tests/test_self_check.py`
+- `tests/test_self_check_examples.py`
 - `.github/workflows/test.yml`
 - `Makefile`
 
@@ -69,8 +75,6 @@ GitHub Actions and `make self-check` use `--keep-going` so the workflow still at
 
 If the reporting step does not produce `artifacts/reporting_summary.md`, the workflow summary falls back to `artifacts/self_check_summary.md` so there is still a human-readable failure trail in the uploaded artifacts. The JSON summary remains available for automation and machine parsing.
 
-The generated outputs include the resolved target list, the `target_source` used for that run, per-file validation issues, `overall_status` / `overall_passed`, and a `cross_validation_issue_count` for file-to-file checks. The Markdown summary is meant for quick human review, while the JSON report is better suited for automation.
-
 ## Validation rules
 The reporting flow validates more than file existence.
 - `image_generation_prompts_ko.txt`: must be non-empty, include scene labels such as `[scene_01_intro]`, and cross-validate those labels against the `scene_id` list in `scene_prompts.json`
@@ -106,11 +110,16 @@ Detailed reporting behavior and examples live here:
 - `docs/reporting-workflow.md`
 - `config/targets.txt.example`
 - `schemas/reporting_output.schema.json`
+- `schemas/self_check_summary.schema.json`
 - `examples/README.md`
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
 - `examples/reporting_summary.fail.sample.md`
+- `examples/self_check_summary.sample.json`
+- `examples/self_check_summary.sample.md`
+- `examples/self_check_summary.fail.sample.json`
+- `examples/self_check_summary.fail.sample.md`
 
 ## Testing
 Run the built-in unit tests from the repository root:
@@ -119,6 +128,6 @@ Run the built-in unit tests from the repository root:
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-The test suite now also checks that the checked-in sample outputs stay aligned with the documented report shape and that the `self_check.py` command composition stays consistent.
+The test suite now also checks that the checked-in reporting and self-check sample outputs stay aligned with their documented schemas and that the `self_check.py` command composition stays consistent.
 
 GitHub Actions runs the repository self-check flow, publishes the Markdown summary into the workflow summary UI when available, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main`, pull requests, and manual dispatches.
