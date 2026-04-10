@@ -253,10 +253,6 @@ def unique_strings_in_order(values: list[str]) -> list[str]:
     return ordered
 
 
-def uniqueStringsInOrder(values: list[str]) -> list[str]:
-    return unique_strings_in_order(values)
-
-
 def find_duplicate_values(values: list[str]) -> list[str]:
     duplicates: list[str] = []
     seen: set[str] = set()
@@ -1146,4 +1142,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-", "encoding": "utf-8", "sha": "77416372c9d76639ec4005077caddc308daa1cd5", "display_url": "https://github.com/lajoal/Utube_videos/blob/main/reporting.py", "display_title": "reporting.py"}
