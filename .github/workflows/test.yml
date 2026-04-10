@@ -20,7 +20,7 @@ jobs:
           python-version: '3.11'
 
       - name: Run self-check
-        run: python self_check.py
+        run: python self_check.py --keep-going
 
       - name: Publish workflow summary
         if: always()
@@ -30,7 +30,7 @@ jobs:
           if [ -f artifacts/reporting_summary.md ]; then
             cat artifacts/reporting_summary.md >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Reporting summary was not generated because the self-check exited early." >> "$GITHUB_STEP_SUMMARY"
+            echo "Reporting summary was not generated because the reporting step did not finish successfully." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Upload reporting artifact

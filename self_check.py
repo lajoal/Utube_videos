@@ -39,6 +39,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Skip the strict reporting step.",
     )
+    parser.add_argument(
+        "--keep-going",
+        action="store_true",
+        help="Continue to later self-check steps even if an earlier step fails.",
+    )
     return parser.parse_args(argv)
 
 
@@ -97,6 +102,29 @@ def run_step(label: str, command: list[str], repo_root: Path) -> int:
     return completed.returncode
 
 
+def run_commands(
+    commands: list[tuple[str, list[str]]],
+    repo_root: Path,
+    *,
+    keep_going: bool = False,
+) -> int:
+    first_failure = 0
+
+    for label, command in commands:
+        exit_code = run_step(label, command, repo_root)
+        if exit_code == 0:
+            continue
+
+        if first_failure == 0:
+            first_failure = exit_code
+
+        print(f"Self-check failed during: {label}")
+        if not keep_going:
+            return exit_code
+
+    return first_failure
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     repo_root = Path(__file__).resolve().parent
@@ -112,16 +140,17 @@ def main(argv: list[str] | None = None) -> int:
         print("No self-check steps selected.")
         return 0
 
-    for label, command in commands:
-        exit_code = run_step(label, command, repo_root)
-        if exit_code != 0:
-            print(f"Self-check failed during: {label}")
-            return exit_code
+    exit_code = run_commands(commands, repo_root, keep_going=args.keep_going)
 
-    print("Self-check completed successfully.")
     if not args.skip_report:
         print(f"JSON report: {repo_root / args.output}")
         print(f"Markdown summary: {repo_root / args.markdown_output}")
+
+    if exit_code != 0:
+        print("Self-check completed with failures.")
+        return exit_code
+
+    print("Self-check completed successfully.")
     return 0
 
 

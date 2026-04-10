@@ -12,6 +12,6 @@ test:
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py' -v
 
 self-check:
-	$(PYTHON) self_check.py
+	$(PYTHON) self_check.py --keep-going
 
 check: self-check

@@ -56,13 +56,16 @@ To run the repository's built-in self-check flow end to end:
 
 ```bash
 python self_check.py
+python self_check.py --keep-going
 make self-check
 make check
 ```
 
-This runs the unit tests first and then executes the strict reporting flow. GitHub Actions now uses the same `self_check.py` entrypoint and can also be triggered manually with `workflow_dispatch`.
+By default, `self_check.py` stops on the first failing step. Use `--keep-going` when you still want the strict reporting step to run after test failures so the JSON and Markdown diagnostics are produced whenever possible.
 
-If `self_check.py` exits before the reporting step, the GitHub Actions workflow summary now shows a short note instead of failing a second time while trying to read a missing Markdown artifact.
+GitHub Actions and `make self-check` use `--keep-going` so the workflow still attempts to publish reporting artifacts even when an earlier self-check step fails.
+
+If the reporting step still exits before writing artifacts, the GitHub Actions workflow summary shows a short fallback note instead of failing a second time while trying to read a missing Markdown artifact.
 
 The generated outputs include the resolved target list, the `target_source` used for that run, per-file validation issues, `overall_status` / `overall_passed`, and a `cross_validation_issue_count` for file-to-file checks. The Markdown summary is meant for quick human review, while the JSON report is better suited for automation.
 

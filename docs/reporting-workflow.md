@@ -23,6 +23,7 @@ To run the repository's built-in self-check flow end to end:
 
 ```bash
 python self_check.py
+python self_check.py --keep-going
 ```
 
 This runs:
@@ -30,9 +31,11 @@ This runs:
 - the strict reporting pass that writes `artifacts/reporting_output.json`
 - the strict reporting Markdown summary at `artifacts/reporting_summary.md`
 
-The GitHub Actions workflow uses the same entrypoint, and it also supports manual runs through `workflow_dispatch`.
+By default, `self_check.py` stops on the first failing step. `--keep-going` tells it to continue into the strict reporting step even after earlier failures so the diagnostic artifacts are still produced whenever possible.
 
-If the self-check exits before the reporting step, the workflow summary now prints a short fallback note instead of failing again when the Markdown artifact is missing.
+The GitHub Actions workflow and `make self-check` both use `python self_check.py --keep-going`.
+
+If the reporting step still exits before writing artifacts, the workflow summary now prints a short fallback note instead of failing again when the Markdown artifact is missing.
 
 ## Strict Mode
 
@@ -52,6 +55,7 @@ The repository Makefile uses `artifacts/` for strict runs:
 
 ```bash
 make report-strict
+make self-check
 ```
 
 Generated files:
