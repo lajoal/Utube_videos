@@ -1,4 +1,6 @@
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -12,6 +14,7 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertEqual(args.python, sys.executable)
         self.assertEqual(args.output, self_check.DEFAULT_JSON_OUTPUT)
         self.assertEqual(args.markdown_output, self_check.DEFAULT_MARKDOWN_OUTPUT)
+        self.assertEqual(args.summary_output, self_check.DEFAULT_SELF_CHECK_SUMMARY_OUTPUT)
         self.assertFalse(args.skip_tests)
         self.assertFalse(args.skip_report)
         self.assertFalse(args.keep_going)
@@ -76,7 +79,7 @@ class SelfCheckScriptTests(unittest.TestCase):
 
         self_check.run_step = fake_run_step
         try:
-            exit_code = self_check.run_commands(
+            exit_code, step_results = self_check.run_commands(
                 [
                     ("Unit tests", ["python", "-m", "unittest"]),
                     ("Strict reporting", ["python", "reporting.py"]),
@@ -88,6 +91,7 @@ class SelfCheckScriptTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 3)
         self.assertEqual(calls, ["Unit tests"])
+        self.assertEqual([item["status"] for item in step_results], ["failed", "skipped"])
 
     def test_run_commands_continues_when_keep_going_enabled(self) -> None:
         calls: list[str] = []
@@ -99,7 +103,7 @@ class SelfCheckScriptTests(unittest.TestCase):
 
         self_check.run_step = fake_run_step
         try:
-            exit_code = self_check.run_commands(
+            exit_code, step_results = self_check.run_commands(
                 [
                     ("Unit tests", ["python", "-m", "unittest"]),
                     ("Strict reporting", ["python", "reporting.py"]),
@@ -112,6 +116,60 @@ class SelfCheckScriptTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 5)
         self.assertEqual(calls, ["Unit tests", "Strict reporting"])
+        self.assertEqual([item["status"] for item in step_results], ["failed", "passed"])
+
+    def test_build_summary_includes_step_counts_and_paths(self) -> None:
+        args = self_check.parse_args(
+            [
+                "--keep-going",
+                "--output",
+                "custom/report.json",
+                "--markdown-output",
+                "custom/report.md",
+                "--summary-output",
+                "custom/self_check.json",
+            ]
+        )
+        step_results = [
+            self_check.build_step_result(
+                "Unit tests",
+                ["python", "-m", "unittest"],
+                status="failed",
+                exit_code=1,
+            ),
+            self_check.build_step_result(
+                "Strict reporting",
+                ["python", "reporting.py"],
+                status="passed",
+                exit_code=0,
+            ),
+        ]
+
+        summary = self_check.build_summary(Path("/repo"), args, step_results, 1)
+
+        self.assertEqual(summary["overall_status"], "fail")
+        self.assertFalse(summary["overall_passed"])
+        self.assertEqual(summary["failed_step_count"], 1)
+        self.assertEqual(summary["skipped_step_count"], 0)
+        self.assertEqual(summary["completed_step_count"], 2)
+        self.assertEqual(summary["selected_step_count"], 2)
+        self.assertEqual(summary["reporting_output_path"], "/repo/custom/report.json")
+        self.assertEqual(summary["reporting_markdown_output_path"], "/repo/custom/report.md")
+        self.assertEqual(summary["self_check_summary_path"], "/repo/custom/self_check.json")
+
+    def test_write_summary_creates_parent_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tempdir:
+            summary_path = Path(tempdir) / "artifacts" / "self_check_summary.json"
+            summary = {
+                "overall_status": "pass",
+                "steps": [],
+            }
+
+            self_check.write_summary(summary_path, summary)
+
+            self.assertTrue(summary_path.is_file())
+            written = json.loads(summary_path.read_text(encoding="utf-8"))
+            self.assertEqual(written["overall_status"], "pass")
 
 
 if __name__ == "__main__":

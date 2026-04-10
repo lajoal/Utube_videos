@@ -29,6 +29,8 @@ jobs:
           echo >> "$GITHUB_STEP_SUMMARY"
           if [ -f artifacts/reporting_summary.md ]; then
             cat artifacts/reporting_summary.md >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f artifacts/self_check_summary.json ]; then
+            echo "Reporting summary was not generated. See artifacts/self_check_summary.json for step-by-step self-check results." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Reporting summary was not generated because the reporting step did not finish successfully." >> "$GITHUB_STEP_SUMMARY"
           fi
