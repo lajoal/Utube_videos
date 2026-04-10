@@ -1,6 +1,6 @@
 PYTHON ?= python
 
-.PHONY: report report-strict test check
+.PHONY: report report-strict test self-check check
 
 report:
 	$(PYTHON) reporting.py
@@ -11,4 +11,7 @@ report-strict:
 test:
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py' -v
 
-check: test report-strict
+self-check:
+	$(PYTHON) self_check.py
+
+check: self-check

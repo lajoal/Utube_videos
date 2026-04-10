@@ -4,6 +4,7 @@ Seed workspace for a Korean video production flow.
 
 ## Included files
 - `reporting.py`
+- `self_check.py`
 - `reporting_targets.txt`
 - `config/targets.txt.example`
 - `docs/reporting-workflow.md`
@@ -19,6 +20,7 @@ Seed workspace for a Korean video production flow.
 - `render_plan.json`
 - `tests/test_reporting.py`
 - `tests/test_reporting_examples.py`
+- `tests/test_self_check.py`
 - `.github/workflows/test.yml`
 - `Makefile`
 
@@ -48,6 +50,18 @@ python reporting.py \
   --markdown-output artifacts/report.md
 ```
 
+## Self-Check
+
+To run the repository's built-in self-check flow end to end:
+
+```bash
+python self_check.py
+make self-check
+make check
+```
+
+This runs the unit tests first and then executes the strict reporting flow. GitHub Actions now uses the same `self_check.py` entrypoint and can also be triggered manually with `workflow_dispatch`.
+
 The generated outputs include the resolved target list, the `target_source` used for that run, per-file validation issues, `overall_status` / `overall_passed`, and a `cross_validation_issue_count` for file-to-file checks. The Markdown summary is meant for quick human review, while the JSON report is better suited for automation.
 
 ## Validation rules
@@ -74,6 +88,7 @@ If you use `make`, the repository includes a few shortcuts:
 make report
 make report-strict
 make test
+make self-check
 make check
 ```
 
@@ -97,6 +112,6 @@ Run the built-in unit tests from the repository root:
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-The test suite now also checks that the checked-in sample outputs stay aligned with the documented report shape.
+The test suite now also checks that the checked-in sample outputs stay aligned with the documented report shape and that the `self_check.py` command composition stays consistent.
 
-GitHub Actions runs the test suite, performs a strict reporting smoke check, publishes the Markdown summary into the workflow summary UI, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main` and on pull requests.
+GitHub Actions runs the repository self-check flow, publishes the Markdown summary into the workflow summary UI, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main`, pull requests, and manual dispatches.

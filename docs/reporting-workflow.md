@@ -17,6 +17,21 @@ Generated files:
 - `reporting_output.json`
 - `reporting_summary.md`
 
+## Repository Self-Check
+
+To run the repository's built-in self-check flow end to end:
+
+```bash
+python self_check.py
+```
+
+This runs:
+- the unit test suite
+- the strict reporting pass that writes `artifacts/reporting_output.json`
+- the strict reporting Markdown summary at `artifacts/reporting_summary.md`
+
+The GitHub Actions workflow uses the same entrypoint, and it also supports manual runs through `workflow_dispatch`.
+
 ## Strict Mode
 
 Strict mode is intended for CI and automation.
@@ -56,6 +71,23 @@ python reporting.py \
   --output artifacts/report.json \
   --markdown-output artifacts/report.md
 ```
+
+## Output Schema
+
+The JSON report structure is documented here:
+- `schemas/reporting_output.schema.json`
+
+This schema is useful when another tool needs to validate or parse `reporting_output.json` programmatically.
+
+## Example Outputs
+
+Sample outputs are checked into the repository here:
+- `examples/reporting_output.sample.json`
+- `examples/reporting_summary.sample.md`
+- `examples/reporting_output.fail.sample.json`
+- `examples/reporting_summary.fail.sample.md`
+
+Use the `sample` files to see a clean run and the `fail.sample` files to see how missing targets and validation issues appear in the reports.
 
 ## What Gets Validated
 
