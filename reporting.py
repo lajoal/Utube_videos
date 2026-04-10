@@ -253,10 +253,6 @@ def unique_strings_in_order(values: list[str]) -> list[str]:
     return ordered
 
 
-def uniqueStringsInOrder(values: list[str]) -> list[str]:
-    return unique_strings_in_order(values)
-
-
 def find_duplicate_values(values: list[str]) -> list[str]:
     duplicates: list[str] = []
     seen: set[str] = set()
@@ -604,7 +600,7 @@ def validate_render_plan_scene_alignment(
     missing_in_timeline = unique_strings_in_order(
         [scene_id for scene_id in scene_prompt_ids if scene_id not in timeline_id_set]
     )
-    extra_in_timeline = uniqueStringsInOrder(
+    extra_in_timeline = unique_strings_in_order(
         [scene_id for scene_id in timeline_ids if scene_id not in scene_prompt_id_set]
     )
 
@@ -974,6 +970,8 @@ def build_output(
     cross_validation_issue_count = sum(
         len(issues) for issues in cross_validation_issues.values()
     )
+    overall_passed = not missing_targets and validation_issue_count == 0
+    overall_status = "pass" if overall_passed else "fail"
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -986,6 +984,8 @@ def build_output(
         "validation_issue_count": validation_issue_count,
         "cross_validation_issue_count": cross_validation_issue_count,
         "files_with_issues": files_with_issues,
+        "overall_passed": overall_passed,
+        "overall_status": overall_status,
         "directories": {
             directory: [
                 item.as_dict(cross_validation_issues.get(item.path))
@@ -1000,6 +1000,8 @@ def build_markdown_summary(output: dict[str, Any]) -> str:
     lines = [
         "# Reporting Summary",
         "",
+        f"- Overall status: `{output['overall_status'].upper()}`",
+        f"- Overall passed: `{output['overall_passed']}`",
         f"- Generated at: `{output['generated_at']}`",
         f"- Scan root: `{output['scan_root']}`",
         f"- Target source: `{output['target_source']}`",
@@ -1058,6 +1060,7 @@ def build_markdown_summary(output: dict[str, Any]) -> str:
 
 
 def print_summary(output: dict[str, Any]) -> None:
+    print(f"Overall status: {output['overall_status'].upper()}")
     print(f"Scan root: {output['scan_root']}")
     print(f"Target source: {output['target_source']}")
     print(f"Target filenames: {len(output['targets'])}")

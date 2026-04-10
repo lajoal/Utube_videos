@@ -275,6 +275,8 @@ class ReportingTests(unittest.TestCase):
             excluded_dirs={".git"},
         )
 
+        self.assertTrue(output["overall_passed"])
+        self.assertEqual(output["overall_status"], "pass")
         self.assertEqual(output["validation_issue_count"], 0)
         self.assertEqual(output["cross_validation_issue_count"], 0)
         self.assertEqual(output["files_with_issues"], [])
@@ -316,6 +318,8 @@ class ReportingTests(unittest.TestCase):
             excluded_dirs=set(),
         )
 
+        self.assertFalse(output["overall_passed"])
+        self.assertEqual(output["overall_status"], "fail")
         self.assertEqual(output["cross_validation_issue_count"], 2)
         self.assertEqual(output["files_with_issues"], ["render_plan.json"])
         render_plan_entry = self.get_output_entry(output, "render_plan.json")
@@ -358,6 +362,7 @@ class ReportingTests(unittest.TestCase):
             excluded_dirs=set(),
         )
 
+        self.assertFalse(output["overall_passed"])
         self.assertEqual(output["cross_validation_issue_count"], 1)
         self.assertEqual(output["files_with_issues"], ["image_generation_prompts_ko.txt"])
         image_prompt_entry = self.get_output_entry(output, "image_generation_prompts_ko.txt")
@@ -394,6 +399,7 @@ class ReportingTests(unittest.TestCase):
             excluded_dirs=set(),
         )
 
+        self.assertFalse(output["overall_passed"])
         self.assertEqual(output["cross_validation_issue_count"], 1)
         self.assertEqual(output["files_with_issues"], ["tts_script_ko.txt"])
         tts_entry = self.get_output_entry(output, "tts_script_ko.txt")
@@ -430,6 +436,7 @@ class ReportingTests(unittest.TestCase):
             excluded_dirs=set(),
         )
 
+        self.assertFalse(output["overall_passed"])
         self.assertEqual(output["cross_validation_issue_count"], 1)
         self.assertEqual(output["files_with_issues"], ["tts_script_ko.txt"])
         tts_entry = self.get_output_entry(output, "tts_script_ko.txt")
@@ -468,6 +475,7 @@ class ReportingTests(unittest.TestCase):
         markdown = reporting.build_markdown_summary(output)
 
         self.assertIn("# Reporting Summary", markdown)
+        self.assertIn("- Overall status: `FAIL`", markdown)
         self.assertIn("## Files With Issues", markdown)
         self.assertIn("`image_generation_prompts_ko.txt`", markdown)
         self.assertIn("image prompt label order does not match", markdown)
@@ -495,9 +503,12 @@ class ReportingTests(unittest.TestCase):
         self.assertTrue(markdown_path.is_file())
 
         output = json.loads(report_path.read_text(encoding="utf-8"))
+        self.assertTrue(output["overall_passed"])
+        self.assertEqual(output["overall_status"], "pass")
         self.assertEqual(output["markdown_summary_path"], str(markdown_path))
         markdown = markdown_path.read_text(encoding="utf-8")
         self.assertIn("# Reporting Summary", markdown)
+        self.assertIn("- Overall status: `PASS`", markdown)
         self.assertIn("## Matches By Directory", markdown)
 
     def test_build_output_lists_missing_targets_and_validation_counts(self) -> None:
@@ -520,6 +531,8 @@ class ReportingTests(unittest.TestCase):
             excluded_dirs={".git", "__pycache__"},
         )
 
+        self.assertFalse(output["overall_passed"])
+        self.assertEqual(output["overall_status"], "fail")
         self.assertEqual(output["matched_file_count"], 1)
         self.assertEqual(output["target_source"], "built_in_defaults")
         self.assertEqual(output["validation_issue_count"], 0)
@@ -559,10 +572,8 @@ class ReportingTests(unittest.TestCase):
         output = json.loads(
             (self.root / "artifacts/report.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(
-            output["targets"],
-            ["tts_script_ko.txt", "scene_prompts.json"],
-        )
+        self.assertFalse(output["overall_passed"])
+        self.assertEqual(output["targets"], ["tts_script_ko.txt", "scene_prompts.json"])
         self.assertEqual(output["target_source"], "targets_file")
         self.assertEqual(output["missing_targets"], ["scene_prompts.json"])
 
@@ -598,6 +609,7 @@ class ReportingTests(unittest.TestCase):
         output = json.loads(
             (self.root / "artifacts/report.json").read_text(encoding="utf-8")
         )
+        self.assertFalse(output["overall_passed"])
         self.assertEqual(output["target_source"], "cli")
         self.assertGreater(output["validation_issue_count"], 0)
         self.assertEqual(output["files_with_issues"], ["scene_prompts.json"])

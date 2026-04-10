@@ -24,6 +24,13 @@ jobs:
       - name: Run reporting smoke check
         run: python reporting.py --fail-on-missing --fail-on-validation-issues --output artifacts/reporting_output.json --markdown-output artifacts/reporting_summary.md
 
+      - name: Publish workflow summary
+        if: always()
+        run: |
+          echo "## Reporting Artifact" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          cat artifacts/reporting_summary.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload reporting artifact
         if: always()
         uses: actions/upload-artifact@v4
