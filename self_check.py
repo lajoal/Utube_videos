@@ -4,6 +4,7 @@ import argparse
 import json
 import subprocess
 import sys
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -198,8 +199,84 @@ def run_commands(
     return first_failure, step_results
 
 
-def format_step_labels(labels: list[str]) -> str:
+def format_labels(labels: list[str]) -> str:
     return ", ".join(labels) if labels else "None"
+
+
+def build_artifact_record(path: Path | None) -> dict[str, Any] | None:
+    if path is None:
+        return None
+
+    exists = path.is_file()
+    return {
+        "path": str(path),
+        "exists": exists,
+        "size_bytes": path.stat().st_size if exists else None,
+    }
+
+
+def summarize_artifacts(artifacts: dict[str, dict[str, Any] | None]) -> dict[str, Any]:
+    present_artifacts: list[str] = []
+    missing_artifacts: list[str] = []
+    artifact_size_bytes_total = 0
+
+    for label, artifact in artifacts.items():
+        if artifact is None:
+            missing_artifacts.append(label)
+            continue
+        if artifact["exists"]:
+            present_artifacts.append(label)
+            if artifact["size_bytes"] is not None:
+                artifact_size_bytes_total += artifact["size_bytes"]
+        else:
+            missing_artifacts.append(label)
+
+    return {
+        "present_artifacts": present_artifacts,
+        "missing_artifacts": missing_artifacts,
+        "present_artifact_count": len(present_artifacts),
+        "missing_artifact_count": len(missing_artifacts),
+        "artifact_size_bytes_total": artifact_size_bytes_total,
+    }
+
+
+def refresh_summary_artifacts(summary: dict[str, Any]) -> None:
+    reporting_output_path = (
+        None
+        if summary["reporting_output_path"] is None
+        else Path(summary["reporting_output_path"])
+    )
+    reporting_markdown_path = (
+        None
+        if summary["reporting_markdown_output_path"] is None
+        else Path(summary["reporting_markdown_output_path"])
+    )
+    self_check_summary_path = Path(summary["self_check_summary_path"])
+    self_check_summary_markdown_path = Path(summary["self_check_summary_markdown_path"])
+
+    artifacts = {
+        "reporting_json": build_artifact_record(reporting_output_path),
+        "reporting_markdown": build_artifact_record(reporting_markdown_path),
+        "self_check_json": build_artifact_record(self_check_summary_path),
+        "self_check_markdown": build_artifact_record(self_check_summary_markdown_path),
+    }
+
+    artifact_summary = summarize_artifacts(artifacts)
+
+    summary["artifacts"] = artifacts
+    summary["reporting_output_exists"] = (
+        None if artifacts["reporting_json"] is None else artifacts["reporting_json"]["exists"]
+    )
+    summary["reporting_markdown_output_exists"] = (
+        None
+        if artifacts["reporting_markdown"] is None
+        else artifacts["reporting_markdown"]["exists"]
+    )
+    summary["present_artifacts"] = artifact_summary["present_artifacts"]
+    summary["missing_artifacts"] = artifact_summary["missing_artifacts"]
+    summary["present_artifact_count"] = artifact_summary["present_artifact_count"]
+    summary["missing_artifact_count"] = artifact_summary["missing_artifact_count"]
+    summary["artifact_size_bytes_total"] = artifact_summary["artifact_size_bytes_total"]
 
 
 def build_summary(
@@ -229,7 +306,7 @@ def build_summary(
     completed_step_count = len(step_results) - skipped_step_count
     overall_passed = exit_code == 0
 
-    return {
+    summary = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "started_at": started_at,
         "finished_at": finished_at,
@@ -241,8 +318,8 @@ def build_summary(
         "skip_report": args.skip_report,
         "reporting_output_path": None if report_output_path is None else str(report_output_path),
         "reporting_markdown_output_path": None if report_markdown_path is None else str(report_markdown_path),
-        "reporting_output_exists": None if report_output_path is None else report_output_path.is_file(),
-        "reporting_markdown_output_exists": None if report_markdown_path is None else report_markdown_path.is_file(),
+        "reporting_output_exists": None,
+        "reporting_markdown_output_exists": None,
         "self_check_summary_path": str(summary_path),
         "self_check_summary_markdown_path": str(summary_markdown_path),
         "selected_step_count": len(step_results),
@@ -252,11 +329,18 @@ def build_summary(
         "passed_steps": passed_steps,
         "failed_steps": failed_steps,
         "skipped_steps": skipped_steps,
+        "present_artifacts": [],
+        "missing_artifacts": [],
+        "present_artifact_count": 0,
+        "missing_artifact_count": 0,
+        "artifact_size_bytes_total": 0,
         "overall_passed": overall_passed,
         "overall_status": "pass" if overall_passed else "fail",
         "exit_code": exit_code,
         "steps": step_results,
     }
+    refresh_summary_artifacts(summary)
+    return summary
 
 
 def build_summary_markdown(summary: dict[str, Any]) -> str:
@@ -278,9 +362,14 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
         f"- Completed steps: `{summary['completed_step_count']}`",
         f"- Failed steps: `{summary['failed_step_count']}`",
         f"- Skipped steps: `{summary['skipped_step_count']}`",
-        f"- Passed step labels: `{format_step_labels(summary['passed_steps'])}`",
-        f"- Failed step labels: `{format_step_labels(summary['failed_steps'])}`",
-        f"- Skipped step labels: `{format_step_labels(summary['skipped_steps'])}`",
+        f"- Passed step labels: `{format_labels(summary['passed_steps'])}`",
+        f"- Failed step labels: `{format_labels(summary['failed_steps'])}`",
+        f"- Skipped step labels: `{format_labels(summary['skipped_steps'])}`",
+        f"- Present artifacts: `{format_labels(summary['present_artifacts'])}`",
+        f"- Missing artifacts: `{format_labels(summary['missing_artifacts'])}`",
+        f"- Present artifact count: `{summary['present_artifact_count']}`",
+        f"- Missing artifact count: `{summary['missing_artifact_count']}`",
+        f"- Artifact size total: `{summary['artifact_size_bytes_total']}`",
         f"- Exit code: `{summary['exit_code']}`",
         f"- JSON summary: `{summary['self_check_summary_path']}`",
         f"- Markdown summary: `{summary['self_check_summary_markdown_path']}`",
@@ -296,6 +385,19 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
         lines.append(
             f"- Reporting Markdown exists: `{summary['reporting_markdown_output_exists']}`"
         )
+
+    lines.extend(["", "## Artifacts", ""])
+    artifacts = summary.get("artifacts", {})
+    if artifacts:
+        for label, artifact in artifacts.items():
+            if artifact is None:
+                lines.append(f"- `{label}`: None")
+                continue
+            lines.append(
+                f"- `{label}`: exists=`{artifact['exists']}`, size_bytes=`{artifact['size_bytes']}`, path=`{artifact['path']}`"
+            )
+    else:
+        lines.append("- None")
 
     lines.extend(["", "## Steps", ""])
     if summary["steps"]:
@@ -331,6 +433,26 @@ def write_summary_markdown(summary_path: Path, summary: dict[str, Any]) -> None:
     )
 
 
+def persist_summary_outputs(
+    summary_path: Path,
+    summary_markdown_path: Path,
+    summary: dict[str, Any],
+) -> None:
+    previous_artifacts: dict[str, Any] | None = None
+
+    for _ in range(5):
+        write_summary(summary_path, summary)
+        write_summary_markdown(summary_markdown_path, summary)
+        refresh_summary_artifacts(summary)
+        current_artifacts = deepcopy(summary.get("artifacts", {}))
+        if current_artifacts == previous_artifacts:
+            break
+        previous_artifacts = current_artifacts
+
+    write_summary(summary_path, summary)
+    write_summary_markdown(summary_markdown_path, summary)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     repo_root = Path(__file__).resolve().parent
@@ -359,8 +481,7 @@ def main(argv: list[str] | None = None) -> int:
             workflow_finished_at.isoformat(),
             elapsed_seconds(workflow_started_at, workflow_finished_at),
         )
-        write_summary(summary_path, summary)
-        write_summary_markdown(summary_markdown_path, summary)
+        persist_summary_outputs(summary_path, summary_markdown_path, summary)
         print("No self-check steps selected.")
         print(f"Self-check summary: {summary_path}")
         print(f"Self-check Markdown summary: {summary_markdown_path}")
@@ -381,8 +502,7 @@ def main(argv: list[str] | None = None) -> int:
         workflow_finished_at.isoformat(),
         elapsed_seconds(workflow_started_at, workflow_finished_at),
     )
-    write_summary(summary_path, summary)
-    write_summary_markdown(summary_markdown_path, summary)
+    persist_summary_outputs(summary_path, summary_markdown_path, summary)
 
     if not args.skip_report:
         print(f"JSON report: {repo_root / args.output}")
