@@ -199,7 +199,7 @@ def run_commands(
     return first_failure, step_results
 
 
-def format_step_labels(labels: list[str]) -> str:
+def format_labels(labels: list[str]) -> str:
     return ", ".join(labels) if labels else "None"
 
 
@@ -212,6 +212,31 @@ def build_artifact_record(path: Path | None) -> dict[str, Any] | None:
         "path": str(path),
         "exists": exists,
         "size_bytes": path.stat().st_size if exists else None,
+    }
+
+
+def summarize_artifacts(artifacts: dict[str, dict[str, Any] | None]) -> dict[str, Any]:
+    present_artifacts: list[str] = []
+    missing_artifacts: list[str] = []
+    artifact_size_bytes_total = 0
+
+    for label, artifact in artifacts.items():
+        if artifact is None:
+            missing_artifacts.append(label)
+            continue
+        if artifact["exists"]:
+            present_artifacts.append(label)
+            if artifact["size_bytes"] is not None:
+                artifact_size_bytes_total += artifact["size_bytes"]
+        else:
+            missing_artifacts.append(label)
+
+    return {
+        "present_artifacts": present_artifacts,
+        "missing_artifacts": missing_artifacts,
+        "present_artifact_count": len(present_artifacts),
+        "missing_artifact_count": len(missing_artifacts),
+        "artifact_size_bytes_total": artifact_size_bytes_total,
     }
 
 
@@ -236,6 +261,8 @@ def refresh_summary_artifacts(summary: dict[str, Any]) -> None:
         "self_check_markdown": build_artifact_record(self_check_summary_markdown_path),
     }
 
+    artifact_summary = summarize_artifacts(artifacts)
+
     summary["artifacts"] = artifacts
     summary["reporting_output_exists"] = (
         None if artifacts["reporting_json"] is None else artifacts["reporting_json"]["exists"]
@@ -245,6 +272,11 @@ def refresh_summary_artifacts(summary: dict[str, Any]) -> None:
         if artifacts["reporting_markdown"] is None
         else artifacts["reporting_markdown"]["exists"]
     )
+    summary["present_artifacts"] = artifact_summary["present_artifacts"]
+    summary["missing_artifacts"] = artifact_summary["missing_artifacts"]
+    summary["present_artifact_count"] = artifact_summary["present_artifact_count"]
+    summary["missing_artifact_count"] = artifact_summary["missing_artifact_count"]
+    summary["artifact_size_bytes_total"] = artifact_summary["artifact_size_bytes_total"]
 
 
 def build_summary(
@@ -297,6 +329,11 @@ def build_summary(
         "passed_steps": passed_steps,
         "failed_steps": failed_steps,
         "skipped_steps": skipped_steps,
+        "present_artifacts": [],
+        "missing_artifacts": [],
+        "present_artifact_count": 0,
+        "missing_artifact_count": 0,
+        "artifact_size_bytes_total": 0,
         "overall_passed": overall_passed,
         "overall_status": "pass" if overall_passed else "fail",
         "exit_code": exit_code,
@@ -325,9 +362,14 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
         f"- Completed steps: `{summary['completed_step_count']}`",
         f"- Failed steps: `{summary['failed_step_count']}`",
         f"- Skipped steps: `{summary['skipped_step_count']}`",
-        f"- Passed step labels: `{format_step_labels(summary['passed_steps'])}`",
-        f"- Failed step labels: `{format_step_labels(summary['failed_steps'])}`",
-        f"- Skipped step labels: `{format_step_labels(summary['skipped_steps'])}`",
+        f"- Passed step labels: `{format_labels(summary['passed_steps'])}`",
+        f"- Failed step labels: `{format_labels(summary['failed_steps'])}`",
+        f"- Skipped step labels: `{format_labels(summary['skipped_steps'])}`",
+        f"- Present artifacts: `{format_labels(summary['present_artifacts'])}`",
+        f"- Missing artifacts: `{format_labels(summary['missing_artifacts'])}`",
+        f"- Present artifact count: `{summary['present_artifact_count']}`",
+        f"- Missing artifact count: `{summary['missing_artifact_count']}`",
+        f"- Artifact size total: `{summary['artifact_size_bytes_total']}`",
         f"- Exit code: `{summary['exit_code']}`",
         f"- JSON summary: `{summary['self_check_summary_path']}`",
         f"- Markdown summary: `{summary['self_check_summary_markdown_path']}`",

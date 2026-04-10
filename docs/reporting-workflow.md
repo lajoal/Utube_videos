@@ -35,7 +35,7 @@ This runs:
 
 By default, `self_check.py` stops on the first failing step. `--keep-going` tells it to continue into the strict reporting step even after earlier failures so the diagnostic artifacts are still produced whenever possible.
 
-The self-check summary JSON records which steps were selected, the exact command for each step, whether it passed, failed, or was skipped, and the overall self-check status. The companion Markdown summary presents the same information in a format that is easier to scan in CI and artifacts. Both artifacts now also include workflow-level and per-step timestamps plus duration values. They also record whether the reporting JSON and Markdown artifacts actually exist after the run, expose `passed_steps`, `failed_steps`, and `skipped_steps` as top-level label lists, and group all generated artifact metadata under `artifacts` with path, existence, and size information. You can move them with `--summary-output` and `--summary-markdown-output`.
+The self-check summary JSON records which steps were selected, the exact command for each step, whether it passed, failed, or was skipped, and the overall self-check status. The companion Markdown summary presents the same information in a format that is easier to scan in CI and artifacts. Both artifacts now also include workflow-level and per-step timestamps plus duration values. They also record whether the reporting JSON and Markdown artifacts actually exist after the run, and they expose `passed_steps`, `failed_steps`, and `skipped_steps` as top-level label lists for quick automation checks. You can move them with `--summary-output` and `--summary-markdown-output`.
 
 The GitHub Actions workflow and `make self-check` both use `python self_check.py --keep-going`.
 
@@ -91,7 +91,7 @@ The repository documents both machine-readable artifact contracts:
 - `schemas/self_check_summary.schema.json`
 
 Use the reporting schema when another tool needs to validate or parse `reporting_output.json` programmatically.
-Use the self-check schema when another tool needs to consume `self_check_summary.json` as a top-level pipeline status object with timing data, artifact presence flags, top-level step label lists, and grouped artifact records.
+Use the self-check schema when another tool needs to consume `self_check_summary.json` as a top-level pipeline status object with timing data, artifact presence flags, and top-level step label lists.
 
 ## Example Outputs
 
@@ -105,7 +105,7 @@ Sample outputs are checked into the repository here:
 - `examples/self_check_summary.fail.sample.json`
 - `examples/self_check_summary.fail.sample.md`
 
-Use the `sample` files to see clean runs and the `fail.sample` files to see how missing targets, validation issues, top-level self-check step failures, timing data, artifact presence flags, top-level step labels, and grouped artifact metadata appear in the artifacts.
+Use the `sample` files to see clean runs and the `fail.sample` files to see how missing targets, validation issues, top-level self-check step failures, timing data, artifact presence flags, and top-level step labels appear in the artifacts.
 
 ## What Gets Validated
 
@@ -142,4 +142,4 @@ Useful top-level JSON fields:
 
 The reporting Markdown summary is best for artifact quality review.
 The self-check Markdown summary is best for understanding which top-level verification step failed before the reporting layer completed.
-The self-check JSON summary is best for machine-readable orchestration, debugging, runtime analysis, artifact presence checks, quick step-status lookups, and grouped artifact inspection.
+The self-check JSON summary is best for machine-readable orchestration, debugging, runtime analysis, artifact presence checks, and quick step-status lookups.

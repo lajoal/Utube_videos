@@ -30,24 +30,10 @@ REQUIRED_SUMMARY_KEYS = {
     "passed_steps",
     "failed_steps",
     "skipped_steps",
-    "artifacts",
     "overall_passed",
     "overall_status",
     "exit_code",
     "steps",
-}
-
-REQUIRED_ARTIFACT_KEYS = {
-    "reporting_json",
-    "reporting_markdown",
-    "self_check_json",
-    "self_check_markdown",
-}
-
-REQUIRED_ARTIFACT_RECORD_KEYS = {
-    "path",
-    "exists",
-    "size_bytes",
 }
 
 REQUIRED_STEP_KEYS = {
@@ -74,19 +60,22 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertIn(summary["overall_status"], {"pass", "fail"})
         self.assertIsInstance(summary["overall_passed"], bool)
         self.assertIsInstance(summary["duration_seconds"], (int, float))
-        self.assertTrue(REQUIRED_ARTIFACT_KEYS.issubset(summary["artifacts"].keys()))
-
-        for artifact in summary["artifacts"].values():
-            if artifact is None:
-                continue
-            self.assertTrue(REQUIRED_ARTIFACT_RECORD_KEYS.issubset(artifact.keys()))
-            self.assertIsInstance(artifact["path"], str)
-            self.assertIsInstance(artifact["exists"], bool)
-            self.assertTrue(
-                artifact["size_bytes"] is None or isinstance(artifact["size_bytes"], int)
-            )
-
+        self.assertTrue(
+            summary["reporting_output_exists"] is None
+            or isinstance(summary["reporting_output_exists"], bool)
+        )
+        self.assertTrue(
+            summary["reporting_markdown_output_exists"] is None
+            or isinstance(summary["reporting_markdown_output_exists"], bool)
+        )
+        self.assertIsInstance(summary["passed_steps"], list)
+        self.assertIsInstance(summary["failed_steps"], list)
+        self.assertIsInstance(summary["skipped_steps"], list)
+        self.assertTrue(all(isinstance(item, str) for item in summary["passed_steps"]))
+        self.assertTrue(all(isinstance(item, str) for item in summary["failed_steps"]))
+        self.assertTrue(all(isinstance(item, str) for item in summary["skipped_steps"]))
         self.assertIsInstance(summary["steps"], list)
+
         for step in summary["steps"]:
             self.assertTrue(REQUIRED_STEP_KEYS.issubset(step.keys()))
             self.assertIn(step["status"], {"passed", "failed", "skipped"})
@@ -124,10 +113,6 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertEqual(summary["passed_steps"], ["Unit tests", "Strict reporting"])
         self.assertEqual(summary["failed_steps"], [])
         self.assertEqual(summary["skipped_steps"], [])
-        self.assertTrue(summary["artifacts"]["reporting_json"]["exists"])
-        self.assertTrue(summary["artifacts"]["reporting_markdown"]["exists"])
-        self.assertTrue(summary["artifacts"]["self_check_json"]["exists"])
-        self.assertTrue(summary["artifacts"]["self_check_markdown"]["exists"])
         self.assertGreater(summary["duration_seconds"], 0)
         self.assertEqual(summary["failed_step_count"], 0)
         self.assertEqual(summary["skipped_step_count"], 0)
@@ -145,10 +130,6 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertEqual(summary["passed_steps"], [])
         self.assertEqual(summary["failed_steps"], ["Unit tests"])
         self.assertEqual(summary["skipped_steps"], ["Strict reporting"])
-        self.assertFalse(summary["artifacts"]["reporting_json"]["exists"])
-        self.assertFalse(summary["artifacts"]["reporting_markdown"]["exists"])
-        self.assertTrue(summary["artifacts"]["self_check_json"]["exists"])
-        self.assertTrue(summary["artifacts"]["self_check_markdown"]["exists"])
         self.assertGreater(summary["duration_seconds"], 0)
         self.assertEqual(summary["failed_step_count"], 1)
         self.assertEqual(summary["skipped_step_count"], 1)
@@ -156,7 +137,7 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertEqual(summary["steps"][0]["status"], "failed")
         self.assertEqual(summary["steps"][1]["status"], "skipped")
 
-    def test_markdown_examples_show_pass_fail_and_artifact_details(self) -> None:
+    def test_markdown_examples_show_pass_fail_and_step_details(self) -> None:
         passing_summary = self.load_text("self_check_summary.sample.md")
         failing_summary = self.load_text("self_check_summary.fail.sample.md")
 
@@ -164,17 +145,14 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertIn("Overall status: `PASS`", passing_summary)
         self.assertIn("Reporting JSON exists: `True`", passing_summary)
         self.assertIn("Passed step labels: `Unit tests, Strict reporting`", passing_summary)
-        self.assertIn("## Artifacts", passing_summary)
-        self.assertIn("`self_check_json`: exists=`True`, size_bytes=`4260`", passing_summary)
         self.assertIn("Duration seconds: `4.5`", passing_summary)
         self.assertIn("### `Unit tests`", passing_summary)
         self.assertIn("Overall status: `FAIL`", failing_summary)
         self.assertIn("Reporting JSON exists: `False`", failing_summary)
         self.assertIn("Failed step labels: `Unit tests`", failing_summary)
         self.assertIn("Skipped step labels: `Strict reporting`", failing_summary)
-        self.assertIn("## Artifacts", failing_summary)
-        self.assertIn("`reporting_json`: exists=`False`, size_bytes=`None`", failing_summary)
-        self.assertIn("`self_check_markdown`: exists=`True`, size_bytes=`1710`", failing_summary)
+        self.assertIn("- Status: `SKIPPED`", failing_summary)
+        self.assertIn("- Duration seconds: `None`", failing_summary)
         self.assertIn("### `Strict reporting`", failing_summary)
 
 

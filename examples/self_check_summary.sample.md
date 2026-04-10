@@ -26,13 +26,6 @@
 - Reporting Markdown: `/workspace/Utube_videos/artifacts/reporting_summary.md`
 - Reporting Markdown exists: `True`
 
-## Artifacts
-
-- `reporting_json`: exists=`True`, size_bytes=`3180`, path=`/workspace/Utube_videos/artifacts/reporting_output.json`
-- `reporting_markdown`: exists=`True`, size_bytes=`1540`, path=`/workspace/Utube_videos/artifacts/reporting_summary.md`
-- `self_check_json`: exists=`True`, size_bytes=`4260`, path=`/workspace/Utube_videos/artifacts/self_check_summary.json`
-- `self_check_markdown`: exists=`True`, size_bytes=`1820`, path=`/workspace/Utube_videos/artifacts/self_check_summary.md`
-
 ## Steps
 
 ### `Unit tests`

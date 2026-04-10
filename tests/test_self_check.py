@@ -133,7 +133,7 @@ class SelfCheckScriptTests(unittest.TestCase):
             all(isinstance(item["duration_seconds"], float) for item in step_results)
         )
 
-    def test_build_summary_includes_artifacts_and_label_lists(self) -> None:
+    def test_build_summary_includes_label_lists_counts_paths_timing_and_artifact_presence(self) -> None:
         args = self_check.parse_args(
             [
                 "--keep-going",
@@ -191,11 +191,6 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertEqual(summary["reporting_markdown_output_path"], "/repo/custom/report.md")
         self.assertFalse(summary["reporting_output_exists"])
         self.assertFalse(summary["reporting_markdown_output_exists"])
-        self.assertEqual(summary["artifacts"]["reporting_json"]["path"], "/repo/custom/report.json")
-        self.assertFalse(summary["artifacts"]["reporting_json"]["exists"])
-        self.assertIsNone(summary["artifacts"]["reporting_json"]["size_bytes"])
-        self.assertEqual(summary["artifacts"]["self_check_json"]["path"], "/repo/custom/self_check.json")
-        self.assertFalse(summary["artifacts"]["self_check_json"]["exists"])
         self.assertEqual(summary["self_check_summary_path"], "/repo/custom/self_check.json")
         self.assertEqual(summary["self_check_summary_markdown_path"], "/repo/custom/self_check.md")
         self.assertEqual(summary["started_at"], "2026-04-10T12:00:00+00:00")
@@ -219,13 +214,11 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertIsNone(summary["reporting_markdown_output_path"])
         self.assertIsNone(summary["reporting_output_exists"])
         self.assertIsNone(summary["reporting_markdown_output_exists"])
-        self.assertIsNone(summary["artifacts"]["reporting_json"])
-        self.assertIsNone(summary["artifacts"]["reporting_markdown"])
         self.assertEqual(summary["passed_steps"], [])
         self.assertEqual(summary["failed_steps"], [])
         self.assertEqual(summary["skipped_steps"], [])
 
-    def test_build_summary_markdown_includes_artifact_section(self) -> None:
+    def test_build_summary_markdown_includes_step_details_artifact_presence_and_label_lists(self) -> None:
         summary = {
             "generated_at": "2026-04-10T12:00:00+00:00",
             "started_at": "2026-04-10T12:00:00+00:00",
@@ -252,28 +245,6 @@ class SelfCheckScriptTests(unittest.TestCase):
             "overall_passed": False,
             "overall_status": "fail",
             "exit_code": 1,
-            "artifacts": {
-                "reporting_json": {
-                    "path": "/repo/artifacts/reporting_output.json",
-                    "exists": False,
-                    "size_bytes": None,
-                },
-                "reporting_markdown": {
-                    "path": "/repo/artifacts/reporting_summary.md",
-                    "exists": True,
-                    "size_bytes": 512,
-                },
-                "self_check_json": {
-                    "path": "/repo/artifacts/self_check_summary.json",
-                    "exists": True,
-                    "size_bytes": 1024,
-                },
-                "self_check_markdown": {
-                    "path": "/repo/artifacts/self_check_summary.md",
-                    "exists": True,
-                    "size_bytes": 768,
-                },
-            },
             "steps": [
                 {
                     "label": "Unit tests",
@@ -302,57 +273,16 @@ class SelfCheckScriptTests(unittest.TestCase):
 
         self.assertIn("# Self-Check Summary", markdown)
         self.assertIn("- Overall status: `FAIL`", markdown)
+        self.assertIn("- Duration seconds: `3.0`", markdown)
         self.assertIn("- Reporting JSON exists: `False`", markdown)
+        self.assertIn("- Reporting Markdown exists: `True`", markdown)
         self.assertIn("- Passed step labels: `Strict reporting`", markdown)
-        self.assertIn("## Artifacts", markdown)
-        self.assertIn("`reporting_json`: exists=`False`, size_bytes=`None`", markdown)
-        self.assertIn("`self_check_json`: exists=`True`, size_bytes=`1024`", markdown)
+        self.assertIn("- Failed step labels: `Unit tests`", markdown)
+        self.assertIn("- Skipped step labels: `None`", markdown)
         self.assertIn("### `Unit tests`", markdown)
+        self.assertIn("- Status: `FAILED`", markdown)
+        self.assertIn("- Started at: `2026-04-10T12:00:00+00:00`", markdown)
         self.assertIn("- Command: `python -m unittest`", markdown)
-
-    def test_persist_summary_outputs_refreshes_self_artifact_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tempdir:
-            repo_root = Path(tempdir)
-            report_json = repo_root / "artifacts" / "report.json"
-            report_markdown = repo_root / "artifacts" / "report.md"
-            report_json.parent.mkdir(parents=True, exist_ok=True)
-            report_json.write_text("{}", encoding="utf-8")
-            report_markdown.write_text("# report\n", encoding="utf-8")
-
-            args = self_check.parse_args(
-                [
-                    "--output",
-                    str(report_json),
-                    "--markdown-output",
-                    str(report_markdown),
-                    "--summary-output",
-                    str(repo_root / "artifacts" / "self_check_summary.json"),
-                    "--summary-markdown-output",
-                    str(repo_root / "artifacts" / "self_check_summary.md"),
-                ]
-            )
-            summary = self_check.build_summary(
-                repo_root,
-                args,
-                [],
-                0,
-                "2026-04-10T12:00:00+00:00",
-                "2026-04-10T12:00:00+00:01",
-                1.0,
-            )
-            summary_path = Path(summary["self_check_summary_path"])
-            summary_markdown_path = Path(summary["self_check_summary_markdown_path"])
-
-            self_check.persist_summary_outputs(summary_path, summary_markdown_path, summary)
-
-            self.assertTrue(summary_path.is_file())
-            self.assertTrue(summary_markdown_path.is_file())
-            self.assertTrue(summary["artifacts"]["self_check_json"]["exists"])
-            self.assertTrue(summary["artifacts"]["self_check_markdown"]["exists"])
-            self.assertIsInstance(summary["artifacts"]["self_check_json"]["size_bytes"], int)
-            self.assertIsInstance(summary["artifacts"]["self_check_markdown"]["size_bytes"], int)
-            self.assertTrue(summary["artifacts"]["reporting_json"]["exists"])
-            self.assertTrue(summary["artifacts"]["reporting_markdown"]["exists"])
 
     def test_write_summary_creates_parent_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
@@ -397,20 +327,6 @@ class SelfCheckScriptTests(unittest.TestCase):
                 "overall_passed": True,
                 "overall_status": "pass",
                 "exit_code": 0,
-                "artifacts": {
-                    "reporting_json": None,
-                    "reporting_markdown": None,
-                    "self_check_json": {
-                        "path": "/repo/artifacts/self_check_summary.json",
-                        "exists": False,
-                        "size_bytes": None,
-                    },
-                    "self_check_markdown": {
-                        "path": str(markdown_path),
-                        "exists": False,
-                        "size_bytes": None,
-                    },
-                },
                 "steps": [],
             }
 
@@ -419,8 +335,7 @@ class SelfCheckScriptTests(unittest.TestCase):
             self.assertTrue(markdown_path.is_file())
             markdown = markdown_path.read_text(encoding="utf-8")
             self.assertIn("# Self-Check Summary", markdown)
-            self.assertIn("## Artifacts", markdown)
-            self.assertIn("`self_check_markdown`: exists=`False`, size_bytes=`None`", markdown)
+            self.assertIn("- Overall status: `PASS`", markdown)
 
 
 if __name__ == "__main__":
