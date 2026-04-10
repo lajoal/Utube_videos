@@ -279,7 +279,7 @@ class ReportingTests(unittest.TestCase):
         self.assertEqual(output["cross_validation_issue_count"], 0)
         self.assertEqual(output["files_with_issues"], [])
 
-    def test_build_output_detects_cross_file_scene_alignment_issues(self) -> None:
+    def test_build_output_detects_render_plan_scene_alignment_issues(self) -> None:
         self.write_valid_text_assets()
         self.write_json("scene_prompts.json", self.build_scene_prompts_data())
         self.write_json(
@@ -329,6 +329,42 @@ class ReportingTests(unittest.TestCase):
             any(
                 "duration_seconds for 'scene_02'" in issue
                 for issue in render_plan_entry["validation_issues"]
+            )
+        )
+
+    def test_build_output_detects_image_prompt_scene_alignment_issues(self) -> None:
+        self.write_file(
+            "image_generation_prompts_ko.txt",
+            "[scene_02_problem]\n문제 정의 장면\n\n[scene_01_intro]\n밝은 인트로 장면\n",
+        )
+        self.write_file(
+            "tts_script_ko.txt",
+            "제목: 테스트\n두 번째 문단입니다.\n",
+        )
+        self.write_json("scene_prompts.json", self.build_scene_prompts_data())
+        self.write_json("render_plan.json", self.build_render_plan_data())
+
+        grouped = reporting.collect_reports(
+            self.root,
+            reporting.DEFAULT_REPORTING_TARGETS,
+            preview_lines=3,
+            excluded_dirs=set(),
+        )
+        output = reporting.build_output(
+            self.root,
+            reporting.DEFAULT_REPORTING_TARGETS,
+            grouped,
+            target_source="built_in_defaults",
+            excluded_dirs=set(),
+        )
+
+        self.assertEqual(output["cross_validation_issue_count"], 1)
+        self.assertEqual(output["files_with_issues"], ["image_generation_prompts_ko.txt"])
+        image_prompt_entry = self.get_output_entry(output, "image_generation_prompts_ko.txt")
+        self.assertTrue(
+            any(
+                "image prompt label order does not match" in issue
+                for issue in image_prompt_entry["validation_issues"]
             )
         )
 

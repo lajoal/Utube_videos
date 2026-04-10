@@ -244,6 +244,21 @@ def unique_strings_in_order(values: list[str]) -> list[str]:
     return ordered
 
 
+def find_duplicate_values(values: list[str]) -> list[str]:
+    duplicates: list[str] = []
+    seen: set[str] = set()
+    duplicate_seen: set[str] = set()
+
+    for value in values:
+        if value in seen and value not in duplicate_seen:
+            duplicate_seen.add(value)
+            duplicates.append(value)
+        else:
+            seen.add(value)
+
+    return duplicates
+
+
 def summarize_json(data: Any) -> dict[str, Any]:
     if isinstance(data, dict):
         return {
@@ -264,6 +279,33 @@ def summarize_json(data: Any) -> dict[str, Any]:
     }
 
 
+def parse_scene_labels_from_text(text: str | None) -> list[str]:
+    labels: list[str] = []
+    if text is None:
+        return labels
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("[") or not stripped.endswith("]"):
+            continue
+        label = stripped[1:-1].strip()
+        if label:
+            labels.append(label)
+
+    return labels
+
+
+def normalize_prompt_label_to_scene_id(
+    label: str, scene_ids: list[str]
+) -> str | None:
+    for scene_id in sorted(scene_ids, key=len, reverse=True):
+        if label == scene_id:
+            return scene_id
+        if label.startswith(f"{scene_id}_") or label.startswith(f"{scene_id}-"):
+            return scene_id
+    return None
+
+
 def validate_text_target(filename: str, text: str | None) -> list[str]:
     issues: list[str] = []
 
@@ -275,7 +317,7 @@ def validate_text_target(filename: str, text: str | None) -> list[str]:
         return ["File is empty."]
 
     if filename == "image_generation_prompts_ko.txt":
-        if not any(line.startswith("[") and line.endswith("]") for line in non_empty_lines):
+        if not parse_scene_labels_from_text(text):
             issues.append("Expected at least one scene label like [scene_01_intro].")
     elif filename == "tts_script_ko.txt":
         if len(non_empty_lines) < 2:
@@ -568,6 +610,69 @@ def validate_render_plan_scene_alignment(
     return issues
 
 
+def validate_image_prompt_scene_alignment(
+    image_prompt_text: str | None,
+    scene_prompts_data: Any,
+    scene_prompt_reference: str,
+) -> list[str]:
+    if image_prompt_text is None or not isinstance(scene_prompts_data, dict):
+        return []
+
+    scene_prompt_ids, _ = collect_scene_prompts_summary(scene_prompts_data)
+    if not scene_prompt_ids:
+        return []
+
+    labels = parse_scene_labels_from_text(image_prompt_text)
+    if not labels:
+        return []
+
+    issues: list[str] = []
+    normalized_ids: list[str] = []
+    unknown_labels: list[str] = []
+
+    for label in labels:
+        normalized = normalize_prompt_label_to_scene_id(label, scene_prompt_ids)
+        if normalized is None:
+            unknown_labels.append(label)
+        else:
+            normalized_ids.append(normalized)
+
+    if unknown_labels:
+        issues.append(
+            "Cross validation: image prompt labels do not map to scene_ids in "
+            f"{scene_prompt_reference}: {', '.join(unique_strings_in_order(unknown_labels))}."
+        )
+
+    duplicate_scene_ids = find_duplicate_values(normalized_ids)
+    if duplicate_scene_ids:
+        issues.append(
+            "Cross validation: image prompt labels map to duplicate scene_ids in "
+            f"{scene_prompt_reference}: {', '.join(duplicate_scene_ids)}."
+        )
+
+    missing_scene_ids = unique_strings_in_order(
+        [scene_id for scene_id in scene_prompt_ids if scene_id not in normalized_ids]
+    )
+    if missing_scene_ids:
+        issues.append(
+            "Cross validation: image prompt labels are missing scene_ids from "
+            f"{scene_prompt_reference}: {', '.join(missing_scene_ids)}."
+        )
+
+    if (
+        not unknown_labels
+        and not duplicate_scene_ids
+        and not missing_scene_ids
+        and normalized_ids != scene_prompt_ids
+    ):
+        issues.append(
+            "Cross validation: image prompt label order does not match "
+            f"{scene_prompt_reference}."
+        )
+
+    return issues
+
+
 def compute_cross_validation_issues(
     root: Path,
     grouped: dict[str, list[FileReport]],
@@ -597,15 +702,36 @@ def compute_cross_validation_issues(
                 continue
 
             scene_prompts_data = load_json_file(scene_prompt_path)
-            issues = validate_render_plan_scene_alignment(
+            render_plan_issues = validate_render_plan_scene_alignment(
                 render_plan_data,
                 scene_prompts_data,
                 scene_prompt_reference,
             )
-            if issues:
+            if render_plan_issues:
                 issues_by_path[report.path] = merge_issues(
                     issues_by_path.get(report.path),
-                    issues,
+                    render_plan_issues,
+                )
+
+            image_prompt_reference = assets.get("image_prompt_path")
+            if not is_non_empty_string(image_prompt_reference):
+                continue
+
+            image_prompt_path = root / image_prompt_reference
+            if not image_prompt_path.is_file():
+                continue
+
+            image_prompt_text = safe_read_text(image_prompt_path)
+            image_prompt_issues = validate_image_prompt_scene_alignment(
+                image_prompt_text,
+                scene_prompts_data,
+                scene_prompt_reference,
+            )
+            if image_prompt_issues:
+                image_prompt_key = str(image_prompt_path.relative_to(root))
+                issues_by_path[image_prompt_key] = merge_issues(
+                    issues_by_path.get(image_prompt_key),
+                    image_prompt_issues,
                 )
 
     return issues_by_path
