@@ -12,6 +12,7 @@ from typing import Any
 DEFAULT_JSON_OUTPUT = "artifacts/reporting_output.json"
 DEFAULT_MARKDOWN_OUTPUT = "artifacts/reporting_summary.md"
 DEFAULT_SELF_CHECK_SUMMARY_OUTPUT = "artifacts/self_check_summary.json"
+DEFAULT_SELF_CHECK_SUMMARY_MARKDOWN_OUTPUT = "artifacts/self_check_summary.md"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -37,6 +38,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--summary-output",
         default=DEFAULT_SELF_CHECK_SUMMARY_OUTPUT,
         help="JSON output path for the self-check step summary.",
+    )
+    parser.add_argument(
+        "--summary-markdown-output",
+        default=DEFAULT_SELF_CHECK_SUMMARY_MARKDOWN_OUTPUT,
+        help="Markdown output path for the self-check step summary.",
     )
     parser.add_argument(
         "--skip-tests",
@@ -179,6 +185,7 @@ def build_summary(
     exit_code: int,
 ) -> dict[str, Any]:
     summary_path = resolve_output_path(repo_root, args.summary_output)
+    summary_markdown_path = resolve_output_path(repo_root, args.summary_markdown_output)
     report_path = (
         None if args.skip_report else str(resolve_output_path(repo_root, args.output))
     )
@@ -202,6 +209,7 @@ def build_summary(
         "reporting_output_path": report_path,
         "reporting_markdown_output_path": markdown_path,
         "self_check_summary_path": str(summary_path),
+        "self_check_summary_markdown_path": str(summary_markdown_path),
         "selected_step_count": len(step_results),
         "completed_step_count": completed_step_count,
         "failed_step_count": failed_step_count,
@@ -213,6 +221,49 @@ def build_summary(
     }
 
 
+def build_summary_markdown(summary: dict[str, Any]) -> str:
+    lines = [
+        "# Self-Check Summary",
+        "",
+        f"- Overall status: `{summary['overall_status'].upper()}`",
+        f"- Overall passed: `{summary['overall_passed']}`",
+        f"- Generated at: `{summary['generated_at']}`",
+        f"- Repository root: `{summary['repo_root']}`",
+        f"- Python executable: `{summary['python_executable']}`",
+        f"- Keep going: `{summary['keep_going']}`",
+        f"- Skip tests: `{summary['skip_tests']}`",
+        f"- Skip report: `{summary['skip_report']}`",
+        f"- Selected steps: `{summary['selected_step_count']}`",
+        f"- Completed steps: `{summary['completed_step_count']}`",
+        f"- Failed steps: `{summary['failed_step_count']}`",
+        f"- Skipped steps: `{summary['skipped_step_count']}`",
+        f"- Exit code: `{summary['exit_code']}`",
+        f"- JSON summary: `{summary['self_check_summary_path']}`",
+        f"- Markdown summary: `{summary['self_check_summary_markdown_path']}`",
+    ]
+
+    if summary.get("reporting_output_path"):
+        lines.append(f"- Reporting JSON: `{summary['reporting_output_path']}`")
+    if summary.get("reporting_markdown_output_path"):
+        lines.append(
+            f"- Reporting Markdown: `{summary['reporting_markdown_output_path']}`"
+        )
+
+    lines.extend(["", "## Steps", ""])
+    if summary["steps"]:
+        for step in summary["steps"]:
+            lines.append(f"### `{step['label']}`")
+            lines.append("")
+            lines.append(f"- Status: `{step['status'].upper()}`")
+            lines.append(f"- Exit code: `{step['exit_code']}`")
+            lines.append(f"- Command: `{step['command_display']}`")
+            lines.append("")
+    else:
+        lines.append("- None")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def write_summary(summary_path: Path, summary: dict[str, Any]) -> None:
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(
@@ -221,10 +272,21 @@ def write_summary(summary_path: Path, summary: dict[str, Any]) -> None:
     )
 
 
+def write_summary_markdown(summary_path: Path, summary: dict[str, Any]) -> None:
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text(
+        build_summary_markdown(summary),
+        encoding="utf-8",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     repo_root = Path(__file__).resolve().parent
     summary_path = resolve_output_path(repo_root, args.summary_output)
+    summary_markdown_path = resolve_output_path(
+        repo_root, args.summary_markdown_output
+    )
     commands = build_commands(
         args.python,
         args.output,
@@ -236,8 +298,10 @@ def main(argv: list[str] | None = None) -> int:
     if not commands:
         summary = build_summary(repo_root, args, [], 0)
         write_summary(summary_path, summary)
+        write_summary_markdown(summary_markdown_path, summary)
         print("No self-check steps selected.")
         print(f"Self-check summary: {summary_path}")
+        print(f"Self-check Markdown summary: {summary_markdown_path}")
         return 0
 
     exit_code, step_results = run_commands(
@@ -247,11 +311,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     summary = build_summary(repo_root, args, step_results, exit_code)
     write_summary(summary_path, summary)
+    write_summary_markdown(summary_markdown_path, summary)
 
     if not args.skip_report:
         print(f"JSON report: {repo_root / args.output}")
         print(f"Markdown summary: {repo_root / args.markdown_output}")
     print(f"Self-check summary: {summary_path}")
+    print(f"Self-check Markdown summary: {summary_markdown_path}")
 
     if exit_code != 0:
         print("Self-check completed with failures.")

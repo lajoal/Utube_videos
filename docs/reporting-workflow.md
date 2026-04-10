@@ -31,14 +31,15 @@ This runs:
 - the strict reporting pass that writes `artifacts/reporting_output.json`
 - the strict reporting Markdown summary at `artifacts/reporting_summary.md`
 - a step-by-step self-check summary at `artifacts/self_check_summary.json`
+- a human-readable self-check summary at `artifacts/self_check_summary.md`
 
 By default, `self_check.py` stops on the first failing step. `--keep-going` tells it to continue into the strict reporting step even after earlier failures so the diagnostic artifacts are still produced whenever possible.
 
-The self-check summary JSON records which steps were selected, the exact command for each step, whether it passed, failed, or was skipped, and the overall self-check status. You can move it with `--summary-output`.
+The self-check summary JSON records which steps were selected, the exact command for each step, whether it passed, failed, or was skipped, and the overall self-check status. The companion Markdown summary presents the same information in a format that is easier to scan in CI and artifacts. You can move them with `--summary-output` and `--summary-markdown-output`.
 
 The GitHub Actions workflow and `make self-check` both use `python self_check.py --keep-going`.
 
-If the reporting step still exits before writing artifacts, the workflow summary now points to `artifacts/self_check_summary.json` so the uploaded artifacts still contain step-by-step failure context.
+If the reporting step still exits before writing artifacts, the workflow summary now falls back to `artifacts/self_check_summary.md` so the uploaded artifacts still contain a readable step-by-step failure trail.
 
 ## Strict Mode
 
@@ -65,6 +66,7 @@ Generated files:
 - `artifacts/reporting_output.json`
 - `artifacts/reporting_summary.md`
 - `artifacts/self_check_summary.json`
+- `artifacts/self_check_summary.md`
 
 ## Target Files
 
@@ -132,5 +134,6 @@ Useful top-level JSON fields:
 - `cross_validation_issue_count`
 - `files_with_issues`
 
-The Markdown summary is better for quick review in pull requests, CI jobs, or workflow artifacts.
-The self-check summary JSON is better for understanding which top-level verification step failed before the reporting layer completed.
+The reporting Markdown summary is best for artifact quality review.
+The self-check Markdown summary is best for understanding which top-level verification step failed before the reporting layer completed.
+The self-check JSON summary is best for machine-readable orchestration and debugging.
