@@ -5,6 +5,8 @@ Seed workspace for a Korean video production flow.
 ## Included files
 - `reporting.py`
 - `reporting_targets.txt`
+- `config/targets.txt.example`
+- `docs/reporting-workflow.md`
 - `image_generation_prompts_ko.txt`
 - `tts_script_ko.txt`
 - `scene_prompts.json`
@@ -69,6 +71,11 @@ make check
 ```
 
 `make report-strict` writes both `artifacts/reporting_output.json` and `artifacts/reporting_summary.md`.
+
+## Docs
+Detailed reporting behavior and examples live here:
+- `docs/reporting-workflow.md`
+- `config/targets.txt.example`
 
 ## Testing
 Run the built-in unit tests from the repository root:

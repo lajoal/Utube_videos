@@ -1,0 +1,7 @@
+# Example reporting target manifest
+# Copy this file to config/targets.txt and edit the filenames as needed.
+
+image_generation_prompts_ko.txt
+tts_script_ko.txt
+scene_prompts.json
+render_plan.json
