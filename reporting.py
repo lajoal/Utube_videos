@@ -253,6 +253,10 @@ def unique_strings_in_order(values: list[str]) -> list[str]:
     return ordered
 
 
+def uniqueStringsInOrder(values: list[str]) -> list[str]:
+    return unique_strings_in_order(values)
+
+
 def find_duplicate_values(values: list[str]) -> list[str]:
     duplicates: list[str] = []
     seen: set[str] = set()
@@ -600,7 +604,7 @@ def validate_render_plan_scene_alignment(
     missing_in_timeline = unique_strings_in_order(
         [scene_id for scene_id in scene_prompt_ids if scene_id not in timeline_id_set]
     )
-    extra_in_timeline = unique_strings_in_order(
+    extra_in_timeline = uniqueStringsInOrder(
         [scene_id for scene_id in timeline_ids if scene_id not in scene_prompt_id_set]
     )
 
