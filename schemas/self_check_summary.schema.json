@@ -27,6 +27,7 @@
     "passed_steps",
     "failed_steps",
     "skipped_steps",
+    "artifacts",
     "overall_passed",
     "overall_status",
     "exit_code",
@@ -116,6 +117,36 @@
         "type": "string"
       }
     },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reporting_json",
+        "reporting_markdown",
+        "self_check_json",
+        "self_check_markdown"
+      ],
+      "properties": {
+        "reporting_json": {
+          "anyOf": [
+            { "$ref": "#/$defs/artifactRecord" },
+            { "type": "null" }
+          ]
+        },
+        "reporting_markdown": {
+          "anyOf": [
+            { "$ref": "#/$defs/artifactRecord" },
+            { "type": "null" }
+          ]
+        },
+        "self_check_json": {
+          "$ref": "#/$defs/artifactRecord"
+        },
+        "self_check_markdown": {
+          "$ref": "#/$defs/artifactRecord"
+        }
+      }
+    },
     "overall_passed": {
       "type": "boolean"
     },
@@ -135,6 +166,27 @@
     }
   },
   "$defs": {
+    "artifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "exists",
+        "size_bytes"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "size_bytes": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
     "stepResult": {
       "type": "object",
       "additionalProperties": false,

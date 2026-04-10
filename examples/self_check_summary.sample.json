@@ -24,6 +24,28 @@
   ],
   "failed_steps": [],
   "skipped_steps": [],
+  "artifacts": {
+    "reporting_json": {
+      "path": "/workspace/Utube_videos/artifacts/reporting_output.json",
+      "exists": true,
+      "size_bytes": 3180
+    },
+    "reporting_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/reporting_summary.md",
+      "exists": true,
+      "size_bytes": 1540
+    },
+    "self_check_json": {
+      "path": "/workspace/Utube_videos/artifacts/self_check_summary.json",
+      "exists": true,
+      "size_bytes": 4260
+    },
+    "self_check_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/self_check_summary.md",
+      "exists": true,
+      "size_bytes": 1820
+    }
+  },
   "overall_passed": true,
   "overall_status": "pass",
   "exit_code": 0,

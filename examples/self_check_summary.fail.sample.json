@@ -25,6 +25,28 @@
   "skipped_steps": [
     "Strict reporting"
   ],
+  "artifacts": {
+    "reporting_json": {
+      "path": "/workspace/Utube_videos/artifacts/reporting_output.json",
+      "exists": false,
+      "size_bytes": null
+    },
+    "reporting_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/reporting_summary.md",
+      "exists": false,
+      "size_bytes": null
+    },
+    "self_check_json": {
+      "path": "/workspace/Utube_videos/artifacts/self_check_summary.json",
+      "exists": true,
+      "size_bytes": 3890
+    },
+    "self_check_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/self_check_summary.md",
+      "exists": true,
+      "size_bytes": 1710
+    }
+  },
   "overall_passed": false,
   "overall_status": "fail",
   "exit_code": 1,
