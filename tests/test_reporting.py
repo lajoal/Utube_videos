@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -30,6 +31,16 @@ class ReportingTests(unittest.TestCase):
             ],
         )
 
+    def test_load_targets_file_ignores_comments_and_blank_lines(self) -> None:
+        target_file = self.write_file(
+            "targets.txt",
+            "# core files\nimage_generation_prompts_ko.txt\n\n render_plan.json \n",
+        )
+
+        targets = reporting.load_targets_file(target_file)
+
+        self.assertEqual(targets, ["image_generation_prompts_ko.txt", "render_plan.json"])
+
     def test_collect_reports_groups_matches_by_directory(self) -> None:
         self.write_file(
             "image_generation_prompts_ko.txt",
@@ -45,6 +56,7 @@ class ReportingTests(unittest.TestCase):
             self.root,
             reporting.DEFAULT_REPORTING_TARGETS,
             preview_lines=2,
+            excluded_dirs=set(),
         )
 
         self.assertEqual(set(grouped.keys()), {".", "nested"})
@@ -54,6 +66,20 @@ class ReportingTests(unittest.TestCase):
             grouped["nested"][0].json_summary["top_level_keys"],
             ["timeline"],
         )
+
+    def test_collect_reports_ignores_excluded_directories(self) -> None:
+        self.write_file(".git/render_plan.json", '{"ignored": true}')
+        self.write_file("nested/render_plan.json", '{"included": true}')
+
+        grouped = reporting.collect_reports(
+            self.root,
+            ["render_plan.json"],
+            preview_lines=2,
+            excluded_dirs={".git"},
+        )
+
+        self.assertEqual(set(grouped.keys()), {"nested"})
+        self.assertEqual(grouped["nested"][0].path, "nested/render_plan.json")
 
     def test_build_file_report_marks_invalid_json(self) -> None:
         invalid_json = self.write_file("scene_prompts.json", "{invalid json")
@@ -71,11 +97,13 @@ class ReportingTests(unittest.TestCase):
             self.root,
             reporting.DEFAULT_REPORTING_TARGETS,
             preview_lines=3,
+            excluded_dirs=set(),
         )
         output = reporting.build_output(
             self.root,
             reporting.DEFAULT_REPORTING_TARGETS,
             grouped,
+            excluded_dirs={".git", "__pycache__"},
         )
 
         self.assertEqual(output["matched_file_count"], 1)
@@ -83,6 +111,39 @@ class ReportingTests(unittest.TestCase):
         self.assertIn("scene_prompts.json", output["missing_targets"])
         self.assertIn("render_plan.json", output["missing_targets"])
         self.assertNotIn("tts_script_ko.txt", output["missing_targets"])
+        self.assertEqual(
+            output["excluded_directories"],
+            [".git", "__pycache__"],
+        )
+
+    def test_main_returns_non_zero_when_fail_on_missing_is_enabled(self) -> None:
+        self.write_file("tts_script_ko.txt", "sample narration")
+        target_file = self.write_file(
+            "targets.txt",
+            "tts_script_ko.txt\nscene_prompts.json\n",
+        )
+
+        exit_code = reporting.main(
+            [
+                "--root",
+                str(self.root),
+                "--output",
+                "artifacts/report.json",
+                "--targets-file",
+                str(target_file),
+                "--fail-on-missing",
+            ]
+        )
+
+        self.assertEqual(exit_code, 1)
+        output = json.loads(
+            (self.root / "artifacts/report.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            output["targets"],
+            ["tts_script_ko.txt", "scene_prompts.json"],
+        )
+        self.assertEqual(output["missing_targets"], ["scene_prompts.json"])
 
 
 if __name__ == "__main__":

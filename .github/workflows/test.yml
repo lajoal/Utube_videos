@@ -20,3 +20,6 @@ jobs:
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Run reporting smoke check
+        run: python reporting.py --fail-on-missing
