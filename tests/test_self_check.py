@@ -133,7 +133,7 @@ class SelfCheckScriptTests(unittest.TestCase):
             all(isinstance(item["duration_seconds"], float) for item in step_results)
         )
 
-    def test_build_summary_includes_step_counts_paths_and_timing(self) -> None:
+    def test_build_summary_includes_step_counts_paths_timing_and_artifact_presence(self) -> None:
         args = self_check.parse_args(
             [
                 "--keep-going",
@@ -186,13 +186,33 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertEqual(summary["selected_step_count"], 2)
         self.assertEqual(summary["reporting_output_path"], "/repo/custom/report.json")
         self.assertEqual(summary["reporting_markdown_output_path"], "/repo/custom/report.md")
+        self.assertFalse(summary["reporting_output_exists"])
+        self.assertFalse(summary["reporting_markdown_output_exists"])
         self.assertEqual(summary["self_check_summary_path"], "/repo/custom/self_check.json")
         self.assertEqual(summary["self_check_summary_markdown_path"], "/repo/custom/self_check.md")
         self.assertEqual(summary["started_at"], "2026-04-10T12:00:00+00:00")
         self.assertEqual(summary["finished_at"], "2026-04-10T12:00:03+00:00")
         self.assertEqual(summary["duration_seconds"], 3.0)
 
-    def test_build_summary_markdown_includes_step_details(self) -> None:
+    def test_build_summary_marks_report_outputs_absent_when_skip_report_is_enabled(self) -> None:
+        args = self_check.parse_args(["--skip-report"])
+
+        summary = self_check.build_summary(
+            Path("/repo"),
+            args,
+            [],
+            0,
+            "2026-04-10T12:00:00+00:00",
+            "2026-04-10T12:00:00+00:00",
+            0.0,
+        )
+
+        self.assertIsNone(summary["reporting_output_path"])
+        self.assertIsNone(summary["reporting_markdown_output_path"])
+        self.assertIsNone(summary["reporting_output_exists"])
+        self.assertIsNone(summary["reporting_markdown_output_exists"])
+
+    def test_build_summary_markdown_includes_step_details_and_artifact_presence(self) -> None:
         summary = {
             "generated_at": "2026-04-10T12:00:00+00:00",
             "started_at": "2026-04-10T12:00:00+00:00",
@@ -205,6 +225,8 @@ class SelfCheckScriptTests(unittest.TestCase):
             "skip_report": False,
             "reporting_output_path": "/repo/artifacts/reporting_output.json",
             "reporting_markdown_output_path": "/repo/artifacts/reporting_summary.md",
+            "reporting_output_exists": False,
+            "reporting_markdown_output_exists": True,
             "self_check_summary_path": "/repo/artifacts/self_check_summary.json",
             "self_check_summary_markdown_path": "/repo/artifacts/self_check_summary.md",
             "selected_step_count": 2,
@@ -243,6 +265,8 @@ class SelfCheckScriptTests(unittest.TestCase):
         self.assertIn("# Self-Check Summary", markdown)
         self.assertIn("- Overall status: `FAIL`", markdown)
         self.assertIn("- Duration seconds: `3.0`", markdown)
+        self.assertIn("- Reporting JSON exists: `False`", markdown)
+        self.assertIn("- Reporting Markdown exists: `True`", markdown)
         self.assertIn("### `Unit tests`", markdown)
         self.assertIn("- Status: `FAILED`", markdown)
         self.assertIn("- Started at: `2026-04-10T12:00:00+00:00`", markdown)
@@ -277,6 +301,8 @@ class SelfCheckScriptTests(unittest.TestCase):
                 "skip_report": False,
                 "reporting_output_path": None,
                 "reporting_markdown_output_path": None,
+                "reporting_output_exists": None,
+                "reporting_markdown_output_exists": None,
                 "self_check_summary_path": "/repo/artifacts/self_check_summary.json",
                 "self_check_summary_markdown_path": str(markdown_path),
                 "selected_step_count": 0,

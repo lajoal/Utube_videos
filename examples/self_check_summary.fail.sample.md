@@ -19,7 +19,9 @@
 - JSON summary: `/workspace/Utube_videos/artifacts/self_check_summary.json`
 - Markdown summary: `/workspace/Utube_videos/artifacts/self_check_summary.md`
 - Reporting JSON: `/workspace/Utube_videos/artifacts/reporting_output.json`
+- Reporting JSON exists: `False`
 - Reporting Markdown: `/workspace/Utube_videos/artifacts/reporting_summary.md`
+- Reporting Markdown exists: `False`
 
 ## Steps
 

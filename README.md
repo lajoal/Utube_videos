@@ -69,7 +69,7 @@ make check
 
 By default, `self_check.py` stops on the first failing step. Use `--keep-going` when you still want the strict reporting step to run after test failures so the JSON and Markdown diagnostics are produced whenever possible.
 
-Every self-check run now also writes `artifacts/self_check_summary.json` and `artifacts/self_check_summary.md` by default. Those files record the selected steps, each command that ran, whether a step passed, failed, or was skipped, plus workflow-level and per-step timestamps and duration values. Use `--summary-output` or `--summary-markdown-output` to send those summaries to different paths.
+Every self-check run now also writes `artifacts/self_check_summary.json` and `artifacts/self_check_summary.md` by default. Those files record the selected steps, each command that ran, whether a step passed, failed, or was skipped, plus workflow-level and per-step timestamps and duration values. They also record whether the strict reporting JSON and Markdown outputs actually exist after the run. Use `--summary-output` or `--summary-markdown-output` to send those summaries to different paths.
 
 GitHub Actions and `make self-check` use `--keep-going` so the workflow still attempts to publish reporting artifacts even when an earlier self-check step fails.
 

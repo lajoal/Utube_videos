@@ -209,13 +209,13 @@ def build_summary(
 ) -> dict[str, Any]:
     summary_path = resolve_output_path(repo_root, args.summary_output)
     summary_markdown_path = resolve_output_path(repo_root, args.summary_markdown_output)
-    report_path = (
-        None if args.skip_report else str(resolve_output_path(repo_root, args.output))
+    report_output_path = (
+        None if args.skip_report else resolve_output_path(repo_root, args.output)
     )
-    markdown_path = (
+    report_markdown_path = (
         None
         if args.skip_report
-        else str(resolve_output_path(repo_root, args.markdown_output))
+        else resolve_output_path(repo_root, args.markdown_output)
     )
     failed_step_count = sum(1 for item in step_results if item["status"] == "failed")
     skipped_step_count = sum(1 for item in step_results if item["status"] == "skipped")
@@ -232,8 +232,10 @@ def build_summary(
         "keep_going": args.keep_going,
         "skip_tests": args.skip_tests,
         "skip_report": args.skip_report,
-        "reporting_output_path": report_path,
-        "reporting_markdown_output_path": markdown_path,
+        "reporting_output_path": None if report_output_path is None else str(report_output_path),
+        "reporting_markdown_output_path": None if report_markdown_path is None else str(report_markdown_path),
+        "reporting_output_exists": None if report_output_path is None else report_output_path.is_file(),
+        "reporting_markdown_output_exists": None if report_markdown_path is None else report_markdown_path.is_file(),
         "self_check_summary_path": str(summary_path),
         "self_check_summary_markdown_path": str(summary_markdown_path),
         "selected_step_count": len(step_results),
@@ -273,9 +275,13 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
 
     if summary.get("reporting_output_path"):
         lines.append(f"- Reporting JSON: `{summary['reporting_output_path']}`")
+        lines.append(f"- Reporting JSON exists: `{summary['reporting_output_exists']}`")
     if summary.get("reporting_markdown_output_path"):
         lines.append(
             f"- Reporting Markdown: `{summary['reporting_markdown_output_path']}`"
+        )
+        lines.append(
+            f"- Reporting Markdown exists: `{summary['reporting_markdown_output_exists']}`"
         )
 
     lines.extend(["", "## Steps", ""])

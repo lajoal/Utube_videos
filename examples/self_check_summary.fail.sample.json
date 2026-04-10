@@ -10,6 +10,8 @@
   "skip_report": false,
   "reporting_output_path": "/workspace/Utube_videos/artifacts/reporting_output.json",
   "reporting_markdown_output_path": "/workspace/Utube_videos/artifacts/reporting_summary.md",
+  "reporting_output_exists": false,
+  "reporting_markdown_output_exists": false,
   "self_check_summary_path": "/workspace/Utube_videos/artifacts/self_check_summary.json",
   "self_check_summary_markdown_path": "/workspace/Utube_videos/artifacts/self_check_summary.md",
   "selected_step_count": 2,

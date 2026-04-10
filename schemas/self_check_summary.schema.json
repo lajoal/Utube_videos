@@ -16,6 +16,8 @@
     "skip_report",
     "reporting_output_path",
     "reporting_markdown_output_path",
+    "reporting_output_exists",
+    "reporting_markdown_output_exists",
     "self_check_summary_path",
     "self_check_summary_markdown_path",
     "selected_step_count",
@@ -64,6 +66,12 @@
     },
     "reporting_markdown_output_path": {
       "type": ["string", "null"]
+    },
+    "reporting_output_exists": {
+      "type": ["boolean", "null"]
+    },
+    "reporting_markdown_output_exists": {
+      "type": ["boolean", "null"]
     },
     "self_check_summary_path": {
       "type": "string"

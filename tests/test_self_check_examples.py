@@ -19,6 +19,8 @@ REQUIRED_SUMMARY_KEYS = {
     "skip_report",
     "reporting_output_path",
     "reporting_markdown_output_path",
+    "reporting_output_exists",
+    "reporting_markdown_output_exists",
     "self_check_summary_path",
     "self_check_summary_markdown_path",
     "selected_step_count",
@@ -55,6 +57,14 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertIn(summary["overall_status"], {"pass", "fail"})
         self.assertIsInstance(summary["overall_passed"], bool)
         self.assertIsInstance(summary["duration_seconds"], (int, float))
+        self.assertTrue(
+            summary["reporting_output_exists"] is None
+            or isinstance(summary["reporting_output_exists"], bool)
+        )
+        self.assertTrue(
+            summary["reporting_markdown_output_exists"] is None
+            or isinstance(summary["reporting_markdown_output_exists"], bool)
+        )
         self.assertIsInstance(summary["steps"], list)
 
         for step in summary["steps"]:
@@ -89,6 +99,8 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assert_summary_shape(summary)
         self.assertTrue(summary["overall_passed"])
         self.assertEqual(summary["overall_status"], "pass")
+        self.assertTrue(summary["reporting_output_exists"])
+        self.assertTrue(summary["reporting_markdown_output_exists"])
         self.assertGreater(summary["duration_seconds"], 0)
         self.assertEqual(summary["failed_step_count"], 0)
         self.assertEqual(summary["skipped_step_count"], 0)
@@ -101,6 +113,8 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assert_summary_shape(summary)
         self.assertFalse(summary["overall_passed"])
         self.assertEqual(summary["overall_status"], "fail")
+        self.assertFalse(summary["reporting_output_exists"])
+        self.assertFalse(summary["reporting_markdown_output_exists"])
         self.assertGreater(summary["duration_seconds"], 0)
         self.assertEqual(summary["failed_step_count"], 1)
         self.assertEqual(summary["skipped_step_count"], 1)
@@ -114,9 +128,11 @@ class SelfCheckExampleTests(unittest.TestCase):
 
         self.assertIn("# Self-Check Summary", passing_summary)
         self.assertIn("Overall status: `PASS`", passing_summary)
+        self.assertIn("Reporting JSON exists: `True`", passing_summary)
         self.assertIn("Duration seconds: `4.5`", passing_summary)
         self.assertIn("### `Unit tests`", passing_summary)
         self.assertIn("Overall status: `FAIL`", failing_summary)
+        self.assertIn("Reporting JSON exists: `False`", failing_summary)
         self.assertIn("- Status: `SKIPPED`", failing_summary)
         self.assertIn("- Duration seconds: `None`", failing_summary)
         self.assertIn("### `Strict reporting`", failing_summary)
