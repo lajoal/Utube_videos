@@ -1,29 +1,81 @@
 {
-  "generated_at": "2026-04-10T12:10:04.500000+00:00",
+  "generated_at": "2026-04-10T12:10:05.300000+00:00",
   "started_at": "2026-04-10T12:10:00+00:00",
-  "finished_at": "2026-04-10T12:10:04.500000+00:00",
-  "duration_seconds": 4.5,
+  "finished_at": "2026-04-10T12:10:05.300000+00:00",
+  "duration_seconds": 5.3,
   "repo_root": "/workspace/Utube_videos",
   "python_executable": "python3.11",
   "keep_going": true,
   "skip_tests": false,
+  "skip_gpu": false,
   "skip_report": false,
+  "require_cuda": false,
+  "require_nvenc": false,
   "reporting_output_path": "/workspace/Utube_videos/artifacts/reporting_output.json",
   "reporting_markdown_output_path": "/workspace/Utube_videos/artifacts/reporting_summary.md",
   "reporting_output_exists": true,
   "reporting_markdown_output_exists": true,
+  "gpu_report_path": "/workspace/Utube_videos/artifacts/gpu_report.json",
+  "gpu_markdown_output_path": "/workspace/Utube_videos/artifacts/gpu_report.md",
+  "gpu_report_exists": true,
+  "gpu_markdown_output_exists": true,
   "self_check_summary_path": "/workspace/Utube_videos/artifacts/self_check_summary.json",
   "self_check_summary_markdown_path": "/workspace/Utube_videos/artifacts/self_check_summary.md",
-  "selected_step_count": 2,
-  "completed_step_count": 2,
+  "selected_step_count": 3,
+  "completed_step_count": 3,
   "failed_step_count": 0,
   "skipped_step_count": 0,
   "passed_steps": [
     "Unit tests",
+    "GPU diagnostics",
     "Strict reporting"
   ],
   "failed_steps": [],
   "skipped_steps": [],
+  "present_artifacts": [
+    "reporting_json",
+    "reporting_markdown",
+    "gpu_json",
+    "gpu_markdown",
+    "self_check_json",
+    "self_check_markdown"
+  ],
+  "missing_artifacts": [],
+  "present_artifact_count": 6,
+  "missing_artifact_count": 0,
+  "artifact_size_bytes_total": 16660,
+  "artifacts": {
+    "reporting_json": {
+      "path": "/workspace/Utube_videos/artifacts/reporting_output.json",
+      "exists": true,
+      "size_bytes": 3180
+    },
+    "reporting_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/reporting_summary.md",
+      "exists": true,
+      "size_bytes": 1540
+    },
+    "gpu_json": {
+      "path": "/workspace/Utube_videos/artifacts/gpu_report.json",
+      "exists": true,
+      "size_bytes": 2190
+    },
+    "gpu_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/gpu_report.md",
+      "exists": true,
+      "size_bytes": 980
+    },
+    "self_check_json": {
+      "path": "/workspace/Utube_videos/artifacts/self_check_summary.json",
+      "exists": true,
+      "size_bytes": 6120
+    },
+    "self_check_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/self_check_summary.md",
+      "exists": true,
+      "size_bytes": 2650
+    }
+  },
   "overall_passed": true,
   "overall_status": "pass",
   "exit_code": 0,
@@ -49,6 +101,23 @@
       "duration_seconds": 3.0
     },
     {
+      "label": "GPU diagnostics",
+      "command": [
+        "python3.11",
+        "gpu_report.py",
+        "--output",
+        "artifacts/gpu_report.json",
+        "--markdown-output",
+        "artifacts/gpu_report.md"
+      ],
+      "command_display": "python3.11 gpu_report.py --output artifacts/gpu_report.json --markdown-output artifacts/gpu_report.md",
+      "status": "passed",
+      "exit_code": 0,
+      "started_at": "2026-04-10T12:10:03+00:00",
+      "finished_at": "2026-04-10T12:10:04.100000+00:00",
+      "duration_seconds": 1.1
+    },
+    {
       "label": "Strict reporting",
       "command": [
         "python3.11",
@@ -63,9 +132,9 @@
       "command_display": "python3.11 reporting.py --fail-on-missing --fail-on-validation-issues --output artifacts/reporting_output.json --markdown-output artifacts/reporting_summary.md",
       "status": "passed",
       "exit_code": 0,
-      "started_at": "2026-04-10T12:10:03.100000+00:00",
-      "finished_at": "2026-04-10T12:10:04.500000+00:00",
-      "duration_seconds": 1.4
+      "started_at": "2026-04-10T12:10:04.100000+00:00",
+      "finished_at": "2026-04-10T12:10:05.300000+00:00",
+      "duration_seconds": 1.2
     }
   ]
 }

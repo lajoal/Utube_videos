@@ -4,17 +4,21 @@ Seed workspace for a Korean video production flow.
 
 ## Included files
 - `reporting.py`
+- `gpu_report.py`
 - `self_check.py`
 - `reporting_targets.txt`
 - `config/targets.txt.example`
 - `docs/reporting-workflow.md`
 - `schemas/reporting_output.schema.json`
+- `schemas/gpu_report.schema.json`
 - `schemas/self_check_summary.schema.json`
 - `examples/README.md`
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
 - `examples/reporting_summary.fail.sample.md`
+- `examples/gpu_report.sample.json`
+- `examples/gpu_report.sample.md`
 - `examples/self_check_summary.sample.json`
 - `examples/self_check_summary.sample.md`
 - `examples/self_check_summary.fail.sample.json`
@@ -25,6 +29,8 @@ Seed workspace for a Korean video production flow.
 - `render_plan.json`
 - `tests/test_reporting.py`
 - `tests/test_reporting_examples.py`
+- `tests/test_gpu_report.py`
+- `tests/test_gpu_report_examples.py`
 - `tests/test_self_check.py`
 - `tests/test_self_check_examples.py`
 - `.github/workflows/test.yml`
@@ -56,6 +62,18 @@ python reporting.py \
   --markdown-output artifacts/report.md
 ```
 
+## GPU Diagnostics
+
+To inspect whether the local machine is ready for GPU-backed video workloads:
+
+```bash
+python gpu_report.py
+python gpu_report.py --require-cuda --require-nvenc
+make gpu-report
+```
+
+By default, `gpu_report.py` writes `artifacts/gpu_report.json` and `artifacts/gpu_report.md`. It checks `nvidia-smi`, `torch` CUDA readiness, FFmpeg CUDA hwaccel support, and NVENC encoders, then summarizes which workloads are ready for acceleration.
+
 ## Self-Check
 
 To run the repository's built-in self-check flow end to end:
@@ -63,17 +81,18 @@ To run the repository's built-in self-check flow end to end:
 ```bash
 python self_check.py
 python self_check.py --keep-going
+python self_check.py --keep-going --require-cuda --require-nvenc
 make self-check
 make check
 ```
 
-By default, `self_check.py` stops on the first failing step. Use `--keep-going` when you still want the strict reporting step to run after test failures so the JSON and Markdown diagnostics are produced whenever possible.
+By default, `self_check.py` stops on the first failing step. Use `--keep-going` when you still want the GPU diagnostics and strict reporting steps to run after test failures so the JSON and Markdown diagnostics are produced whenever possible. Use `--require-cuda` or `--require-nvenc` when the machine must be GPU-ready for the run to count as passing.
 
-Every self-check run now also writes `artifacts/self_check_summary.json` and `artifacts/self_check_summary.md` by default. Those files record the selected steps, each command that ran, whether a step passed, failed, or was skipped, plus workflow-level and per-step timestamps and duration values. They also record whether the strict reporting JSON and Markdown outputs actually exist after the run, and they expose `passed_steps`, `failed_steps`, and `skipped_steps` at the top level for quick automation checks. Use `--summary-output` or `--summary-markdown-output` to send those summaries to different paths.
+Every self-check run also writes `artifacts/self_check_summary.json` and `artifacts/self_check_summary.md` by default. Those files record the selected steps, each command that ran, whether a step passed, failed, or was skipped, plus workflow-level and per-step timestamps and duration values. They record whether the strict reporting and GPU artifacts actually exist after the run, expose `passed_steps`, `failed_steps`, and `skipped_steps` at the top level for quick automation checks, and group generated artifact metadata under `artifacts` with path, existence, and size information. Use `--summary-output` or `--summary-markdown-output` to send those summaries to different paths.
 
-GitHub Actions and `make self-check` use `--keep-going` so the workflow still attempts to publish reporting artifacts even when an earlier self-check step fails.
+GitHub Actions and `make self-check` use `--keep-going` so the workflow still attempts to publish diagnostic artifacts even when an earlier self-check step fails.
 
-If the reporting step does not produce `artifacts/reporting_summary.md`, the workflow summary falls back to `artifacts/self_check_summary.md` so there is still a human-readable failure trail in the uploaded artifacts. The JSON summary remains available for automation and machine parsing.
+If the reporting step does not produce `artifacts/reporting_summary.md`, the workflow summary falls back to `artifacts/self_check_summary.md` so there is still a human-readable failure trail in the uploaded artifacts.
 
 ## Validation rules
 The reporting flow validates more than file existence.
@@ -97,6 +116,7 @@ If you use `make`, the repository includes a few shortcuts:
 
 ```bash
 make report
+make gpu-report
 make report-strict
 make test
 make self-check
@@ -106,16 +126,19 @@ make check
 `make report-strict` writes both `artifacts/reporting_output.json` and `artifacts/reporting_summary.md`.
 
 ## Docs
-Detailed reporting behavior and examples live here:
+Detailed reporting, GPU diagnostics, and self-check behavior live here:
 - `docs/reporting-workflow.md`
 - `config/targets.txt.example`
 - `schemas/reporting_output.schema.json`
+- `schemas/gpu_report.schema.json`
 - `schemas/self_check_summary.schema.json`
 - `examples/README.md`
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
 - `examples/reporting_summary.fail.sample.md`
+- `examples/gpu_report.sample.json`
+- `examples/gpu_report.sample.md`
 - `examples/self_check_summary.sample.json`
 - `examples/self_check_summary.sample.md`
 - `examples/self_check_summary.fail.sample.json`
@@ -128,6 +151,6 @@ Run the built-in unit tests from the repository root:
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-The test suite now also checks that the checked-in reporting and self-check sample outputs stay aligned with their documented schemas and that the `self_check.py` command composition stays consistent.
+The test suite checks that the checked-in reporting, GPU, and self-check sample outputs stay aligned with their documented schemas and that the `self_check.py` command composition stays consistent.
 
 GitHub Actions runs the repository self-check flow, publishes the Markdown summary into the workflow summary UI when available, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main`, pull requests, and manual dispatches.

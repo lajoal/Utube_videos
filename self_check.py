@@ -12,13 +12,15 @@ from typing import Any
 
 DEFAULT_JSON_OUTPUT = "artifacts/reporting_output.json"
 DEFAULT_MARKDOWN_OUTPUT = "artifacts/reporting_summary.md"
+DEFAULT_GPU_JSON_OUTPUT = "artifacts/gpu_report.json"
+DEFAULT_GPU_MARKDOWN_OUTPUT = "artifacts/gpu_report.md"
 DEFAULT_SELF_CHECK_SUMMARY_OUTPUT = "artifacts/self_check_summary.json"
 DEFAULT_SELF_CHECK_SUMMARY_MARKDOWN_OUTPUT = "artifacts/self_check_summary.md"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run the repository self-check flow end to end."
+        description="Run the repository self-check flow end to end.",
     )
     parser.add_argument(
         "--python",
@@ -36,6 +38,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Markdown summary output path for the strict reporting step.",
     )
     parser.add_argument(
+        "--gpu-output",
+        default=DEFAULT_GPU_JSON_OUTPUT,
+        help="JSON output path for the GPU diagnostics step.",
+    )
+    parser.add_argument(
+        "--gpu-markdown-output",
+        default=DEFAULT_GPU_MARKDOWN_OUTPUT,
+        help="Markdown output path for the GPU diagnostics step.",
+    )
+    parser.add_argument(
         "--summary-output",
         default=DEFAULT_SELF_CHECK_SUMMARY_OUTPUT,
         help="JSON output path for the self-check step summary.",
@@ -51,6 +63,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Skip unit test execution.",
     )
     parser.add_argument(
+        "--skip-gpu",
+        action="store_true",
+        help="Skip the GPU diagnostics step.",
+    )
+    parser.add_argument(
         "--skip-report",
         action="store_true",
         help="Skip the strict reporting step.",
@@ -60,6 +77,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Continue to later self-check steps even if an earlier step fails.",
     )
+    parser.add_argument(
+        "--require-cuda",
+        action="store_true",
+        help="Fail the GPU diagnostics step when CUDA-ready torch execution is unavailable.",
+    )
+    parser.add_argument(
+        "--require-nvenc",
+        action="store_true",
+        help="Fail the GPU diagnostics step when FFmpeg NVENC encoders are unavailable.",
+    )
     return parser.parse_args(argv)
 
 
@@ -67,9 +94,14 @@ def build_commands(
     python_executable: str,
     output_path: str,
     markdown_output_path: str,
+    gpu_output_path: str,
+    gpu_markdown_output_path: str,
     *,
     skip_tests: bool = False,
+    skip_gpu: bool = False,
     skip_report: bool = False,
+    require_cuda: bool = False,
+    require_nvenc: bool = False,
 ) -> list[tuple[str, list[str]]]:
     commands: list[tuple[str, list[str]]] = []
 
@@ -90,6 +122,21 @@ def build_commands(
                 ],
             )
         )
+
+    if not skip_gpu:
+        gpu_command = [
+            python_executable,
+            "gpu_report.py",
+            "--output",
+            gpu_output_path,
+            "--markdown-output",
+            gpu_markdown_output_path,
+        ]
+        if require_cuda:
+            gpu_command.append("--require-cuda")
+        if require_nvenc:
+            gpu_command.append("--require-nvenc")
+        commands.append(("GPU diagnostics", gpu_command))
 
     if not skip_report:
         commands.append(
@@ -251,12 +298,22 @@ def refresh_summary_artifacts(summary: dict[str, Any]) -> None:
         if summary["reporting_markdown_output_path"] is None
         else Path(summary["reporting_markdown_output_path"])
     )
+    gpu_output_path = (
+        None if summary["gpu_report_path"] is None else Path(summary["gpu_report_path"])
+    )
+    gpu_markdown_path = (
+        None
+        if summary["gpu_markdown_output_path"] is None
+        else Path(summary["gpu_markdown_output_path"])
+    )
     self_check_summary_path = Path(summary["self_check_summary_path"])
     self_check_summary_markdown_path = Path(summary["self_check_summary_markdown_path"])
 
     artifacts = {
         "reporting_json": build_artifact_record(reporting_output_path),
         "reporting_markdown": build_artifact_record(reporting_markdown_path),
+        "gpu_json": build_artifact_record(gpu_output_path),
+        "gpu_markdown": build_artifact_record(gpu_markdown_path),
         "self_check_json": build_artifact_record(self_check_summary_path),
         "self_check_markdown": build_artifact_record(self_check_summary_markdown_path),
     }
@@ -271,6 +328,12 @@ def refresh_summary_artifacts(summary: dict[str, Any]) -> None:
         None
         if artifacts["reporting_markdown"] is None
         else artifacts["reporting_markdown"]["exists"]
+    )
+    summary["gpu_report_exists"] = (
+        None if artifacts["gpu_json"] is None else artifacts["gpu_json"]["exists"]
+    )
+    summary["gpu_markdown_output_exists"] = (
+        None if artifacts["gpu_markdown"] is None else artifacts["gpu_markdown"]["exists"]
     )
     summary["present_artifacts"] = artifact_summary["present_artifacts"]
     summary["missing_artifacts"] = artifact_summary["missing_artifacts"]
@@ -298,6 +361,14 @@ def build_summary(
         if args.skip_report
         else resolve_output_path(repo_root, args.markdown_output)
     )
+    gpu_output_path = (
+        None if args.skip_gpu else resolve_output_path(repo_root, args.gpu_output)
+    )
+    gpu_markdown_path = (
+        None
+        if args.skip_gpu
+        else resolve_output_path(repo_root, args.gpu_markdown_output)
+    )
     passed_steps = [item["label"] for item in step_results if item["status"] == "passed"]
     failed_steps = [item["label"] for item in step_results if item["status"] == "failed"]
     skipped_steps = [item["label"] for item in step_results if item["status"] == "skipped"]
@@ -315,11 +386,18 @@ def build_summary(
         "python_executable": args.python,
         "keep_going": args.keep_going,
         "skip_tests": args.skip_tests,
+        "skip_gpu": args.skip_gpu,
         "skip_report": args.skip_report,
+        "require_cuda": args.require_cuda,
+        "require_nvenc": args.require_nvenc,
         "reporting_output_path": None if report_output_path is None else str(report_output_path),
         "reporting_markdown_output_path": None if report_markdown_path is None else str(report_markdown_path),
         "reporting_output_exists": None,
         "reporting_markdown_output_exists": None,
+        "gpu_report_path": None if gpu_output_path is None else str(gpu_output_path),
+        "gpu_markdown_output_path": None if gpu_markdown_path is None else str(gpu_markdown_path),
+        "gpu_report_exists": None,
+        "gpu_markdown_output_exists": None,
         "self_check_summary_path": str(summary_path),
         "self_check_summary_markdown_path": str(summary_markdown_path),
         "selected_step_count": len(step_results),
@@ -334,6 +412,7 @@ def build_summary(
         "present_artifact_count": 0,
         "missing_artifact_count": 0,
         "artifact_size_bytes_total": 0,
+        "artifacts": {},
         "overall_passed": overall_passed,
         "overall_status": "pass" if overall_passed else "fail",
         "exit_code": exit_code,
@@ -357,7 +436,10 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
         f"- Python executable: `{summary['python_executable']}`",
         f"- Keep going: `{summary['keep_going']}`",
         f"- Skip tests: `{summary['skip_tests']}`",
+        f"- Skip GPU: `{summary['skip_gpu']}`",
         f"- Skip report: `{summary['skip_report']}`",
+        f"- Require CUDA: `{summary['require_cuda']}`",
+        f"- Require NVENC: `{summary['require_nvenc']}`",
         f"- Selected steps: `{summary['selected_step_count']}`",
         f"- Completed steps: `{summary['completed_step_count']}`",
         f"- Failed steps: `{summary['failed_step_count']}`",
@@ -375,6 +457,14 @@ def build_summary_markdown(summary: dict[str, Any]) -> str:
         f"- Markdown summary: `{summary['self_check_summary_markdown_path']}`",
     ]
 
+    if summary.get("gpu_report_path"):
+        lines.append(f"- GPU JSON: `{summary['gpu_report_path']}`")
+        lines.append(f"- GPU JSON exists: `{summary['gpu_report_exists']}`")
+    if summary.get("gpu_markdown_output_path"):
+        lines.append(f"- GPU Markdown: `{summary['gpu_markdown_output_path']}`")
+        lines.append(
+            f"- GPU Markdown exists: `{summary['gpu_markdown_output_exists']}`"
+        )
     if summary.get("reporting_output_path"):
         lines.append(f"- Reporting JSON: `{summary['reporting_output_path']}`")
         lines.append(f"- Reporting JSON exists: `{summary['reporting_output_exists']}`")
@@ -464,8 +554,13 @@ def main(argv: list[str] | None = None) -> int:
         args.python,
         args.output,
         args.markdown_output,
+        args.gpu_output,
+        args.gpu_markdown_output,
         skip_tests=args.skip_tests,
+        skip_gpu=args.skip_gpu,
         skip_report=args.skip_report,
+        require_cuda=args.require_cuda,
+        require_nvenc=args.require_nvenc,
     )
 
     workflow_started_at = datetime.now(timezone.utc)
@@ -504,6 +599,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     persist_summary_outputs(summary_path, summary_markdown_path, summary)
 
+    if not args.skip_gpu:
+        print(f"GPU report: {repo_root / args.gpu_output}")
+        print(f"GPU Markdown summary: {repo_root / args.gpu_markdown_output}")
     if not args.skip_report:
         print(f"JSON report: {repo_root / args.output}")
         print(f"Markdown summary: {repo_root / args.markdown_output}")

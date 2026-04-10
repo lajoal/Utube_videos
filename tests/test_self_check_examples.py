@@ -16,11 +16,18 @@ REQUIRED_SUMMARY_KEYS = {
     "python_executable",
     "keep_going",
     "skip_tests",
+    "skip_gpu",
     "skip_report",
+    "require_cuda",
+    "require_nvenc",
     "reporting_output_path",
     "reporting_markdown_output_path",
     "reporting_output_exists",
     "reporting_markdown_output_exists",
+    "gpu_report_path",
+    "gpu_markdown_output_path",
+    "gpu_report_exists",
+    "gpu_markdown_output_exists",
     "self_check_summary_path",
     "self_check_summary_markdown_path",
     "selected_step_count",
@@ -30,10 +37,31 @@ REQUIRED_SUMMARY_KEYS = {
     "passed_steps",
     "failed_steps",
     "skipped_steps",
+    "present_artifacts",
+    "missing_artifacts",
+    "present_artifact_count",
+    "missing_artifact_count",
+    "artifact_size_bytes_total",
+    "artifacts",
     "overall_passed",
     "overall_status",
     "exit_code",
     "steps",
+}
+
+REQUIRED_ARTIFACT_KEYS = {
+    "reporting_json",
+    "reporting_markdown",
+    "gpu_json",
+    "gpu_markdown",
+    "self_check_json",
+    "self_check_markdown",
+}
+
+REQUIRED_ARTIFACT_RECORD_KEYS = {
+    "path",
+    "exists",
+    "size_bytes",
 }
 
 REQUIRED_STEP_KEYS = {
@@ -60,6 +88,12 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertIn(summary["overall_status"], {"pass", "fail"})
         self.assertIsInstance(summary["overall_passed"], bool)
         self.assertIsInstance(summary["duration_seconds"], (int, float))
+        self.assertTrue(REQUIRED_ARTIFACT_KEYS.issubset(summary["artifacts"].keys()))
+        self.assertIsInstance(summary["present_artifacts"], list)
+        self.assertIsInstance(summary["missing_artifacts"], list)
+        self.assertIsInstance(summary["present_artifact_count"], int)
+        self.assertIsInstance(summary["missing_artifact_count"], int)
+        self.assertIsInstance(summary["artifact_size_bytes_total"], int)
         self.assertTrue(
             summary["reporting_output_exists"] is None
             or isinstance(summary["reporting_output_exists"], bool)
@@ -68,14 +102,24 @@ class SelfCheckExampleTests(unittest.TestCase):
             summary["reporting_markdown_output_exists"] is None
             or isinstance(summary["reporting_markdown_output_exists"], bool)
         )
-        self.assertIsInstance(summary["passed_steps"], list)
-        self.assertIsInstance(summary["failed_steps"], list)
-        self.assertIsInstance(summary["skipped_steps"], list)
-        self.assertTrue(all(isinstance(item, str) for item in summary["passed_steps"]))
-        self.assertTrue(all(isinstance(item, str) for item in summary["failed_steps"]))
-        self.assertTrue(all(isinstance(item, str) for item in summary["skipped_steps"]))
+        self.assertTrue(
+            summary["gpu_report_exists"] is None
+            or isinstance(summary["gpu_report_exists"], bool)
+        )
+        self.assertTrue(
+            summary["gpu_markdown_output_exists"] is None
+            or isinstance(summary["gpu_markdown_output_exists"], bool)
+        )
+        for artifact in summary["artifacts"].values():
+            if artifact is None:
+                continue
+            self.assertTrue(REQUIRED_ARTIFACT_RECORD_KEYS.issubset(artifact.keys()))
+            self.assertIsInstance(artifact["path"], str)
+            self.assertIsInstance(artifact["exists"], bool)
+            self.assertTrue(
+                artifact["size_bytes"] is None or isinstance(artifact["size_bytes"], int)
+            )
         self.assertIsInstance(summary["steps"], list)
-
         for step in summary["steps"]:
             self.assertTrue(REQUIRED_STEP_KEYS.issubset(step.keys()))
             self.assertIn(step["status"], {"passed", "failed", "skipped"})
@@ -110,13 +154,32 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertEqual(summary["overall_status"], "pass")
         self.assertTrue(summary["reporting_output_exists"])
         self.assertTrue(summary["reporting_markdown_output_exists"])
-        self.assertEqual(summary["passed_steps"], ["Unit tests", "Strict reporting"])
+        self.assertTrue(summary["gpu_report_exists"])
+        self.assertTrue(summary["gpu_markdown_output_exists"])
+        self.assertEqual(
+            summary["passed_steps"],
+            ["Unit tests", "GPU diagnostics", "Strict reporting"],
+        )
         self.assertEqual(summary["failed_steps"], [])
         self.assertEqual(summary["skipped_steps"], [])
+        self.assertEqual(
+            summary["present_artifacts"],
+            [
+                "reporting_json",
+                "reporting_markdown",
+                "gpu_json",
+                "gpu_markdown",
+                "self_check_json",
+                "self_check_markdown",
+            ],
+        )
+        self.assertEqual(summary["missing_artifacts"], [])
+        self.assertEqual(summary["present_artifact_count"], 6)
+        self.assertEqual(summary["missing_artifact_count"], 0)
         self.assertGreater(summary["duration_seconds"], 0)
         self.assertEqual(summary["failed_step_count"], 0)
         self.assertEqual(summary["skipped_step_count"], 0)
-        self.assertEqual(len(summary["steps"]), 2)
+        self.assertEqual(len(summary["steps"]), 3)
         self.assertTrue(all(step["status"] == "passed" for step in summary["steps"]))
 
     def test_failing_self_check_example_matches_expected_status(self) -> None:
@@ -127,32 +190,44 @@ class SelfCheckExampleTests(unittest.TestCase):
         self.assertEqual(summary["overall_status"], "fail")
         self.assertFalse(summary["reporting_output_exists"])
         self.assertFalse(summary["reporting_markdown_output_exists"])
+        self.assertFalse(summary["gpu_report_exists"])
+        self.assertFalse(summary["gpu_markdown_output_exists"])
         self.assertEqual(summary["passed_steps"], [])
         self.assertEqual(summary["failed_steps"], ["Unit tests"])
-        self.assertEqual(summary["skipped_steps"], ["Strict reporting"])
+        self.assertEqual(summary["skipped_steps"], ["GPU diagnostics", "Strict reporting"])
+        self.assertEqual(
+            summary["present_artifacts"],
+            ["self_check_json", "self_check_markdown"],
+        )
+        self.assertEqual(
+            summary["missing_artifacts"],
+            ["reporting_json", "reporting_markdown", "gpu_json", "gpu_markdown"],
+        )
+        self.assertEqual(summary["present_artifact_count"], 2)
+        self.assertEqual(summary["missing_artifact_count"], 4)
         self.assertGreater(summary["duration_seconds"], 0)
         self.assertEqual(summary["failed_step_count"], 1)
-        self.assertEqual(summary["skipped_step_count"], 1)
-        self.assertEqual(len(summary["steps"]), 2)
+        self.assertEqual(summary["skipped_step_count"], 2)
+        self.assertEqual(len(summary["steps"]), 3)
         self.assertEqual(summary["steps"][0]["status"], "failed")
         self.assertEqual(summary["steps"][1]["status"], "skipped")
+        self.assertEqual(summary["steps"][2]["status"], "skipped")
 
-    def test_markdown_examples_show_pass_fail_and_step_details(self) -> None:
+    def test_markdown_examples_show_pass_fail_gpu_and_artifact_details(self) -> None:
         passing_summary = self.load_text("self_check_summary.sample.md")
         failing_summary = self.load_text("self_check_summary.fail.sample.md")
 
         self.assertIn("# Self-Check Summary", passing_summary)
         self.assertIn("Overall status: `PASS`", passing_summary)
-        self.assertIn("Reporting JSON exists: `True`", passing_summary)
-        self.assertIn("Passed step labels: `Unit tests, Strict reporting`", passing_summary)
-        self.assertIn("Duration seconds: `4.5`", passing_summary)
-        self.assertIn("### `Unit tests`", passing_summary)
+        self.assertIn("GPU JSON exists: `True`", passing_summary)
+        self.assertIn("Passed step labels: `Unit tests, GPU diagnostics, Strict reporting`", passing_summary)
+        self.assertIn("Present artifacts: `reporting_json, reporting_markdown, gpu_json, gpu_markdown, self_check_json, self_check_markdown`", passing_summary)
+        self.assertIn("### `GPU diagnostics`", passing_summary)
         self.assertIn("Overall status: `FAIL`", failing_summary)
-        self.assertIn("Reporting JSON exists: `False`", failing_summary)
+        self.assertIn("GPU JSON exists: `False`", failing_summary)
         self.assertIn("Failed step labels: `Unit tests`", failing_summary)
-        self.assertIn("Skipped step labels: `Strict reporting`", failing_summary)
-        self.assertIn("- Status: `SKIPPED`", failing_summary)
-        self.assertIn("- Duration seconds: `None`", failing_summary)
+        self.assertIn("Skipped step labels: `GPU diagnostics, Strict reporting`", failing_summary)
+        self.assertIn("Present artifacts: `self_check_json, self_check_markdown`", failing_summary)
         self.assertIn("### `Strict reporting`", failing_summary)
 
 

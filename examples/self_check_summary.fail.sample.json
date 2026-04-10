@@ -7,24 +7,77 @@
   "python_executable": "python3.11",
   "keep_going": false,
   "skip_tests": false,
+  "skip_gpu": false,
   "skip_report": false,
+  "require_cuda": false,
+  "require_nvenc": false,
   "reporting_output_path": "/workspace/Utube_videos/artifacts/reporting_output.json",
   "reporting_markdown_output_path": "/workspace/Utube_videos/artifacts/reporting_summary.md",
   "reporting_output_exists": false,
   "reporting_markdown_output_exists": false,
+  "gpu_report_path": "/workspace/Utube_videos/artifacts/gpu_report.json",
+  "gpu_markdown_output_path": "/workspace/Utube_videos/artifacts/gpu_report.md",
+  "gpu_report_exists": false,
+  "gpu_markdown_output_exists": false,
   "self_check_summary_path": "/workspace/Utube_videos/artifacts/self_check_summary.json",
   "self_check_summary_markdown_path": "/workspace/Utube_videos/artifacts/self_check_summary.md",
-  "selected_step_count": 2,
+  "selected_step_count": 3,
   "completed_step_count": 1,
   "failed_step_count": 1,
-  "skipped_step_count": 1,
+  "skipped_step_count": 2,
   "passed_steps": [],
   "failed_steps": [
     "Unit tests"
   ],
   "skipped_steps": [
+    "GPU diagnostics",
     "Strict reporting"
   ],
+  "present_artifacts": [
+    "self_check_json",
+    "self_check_markdown"
+  ],
+  "missing_artifacts": [
+    "reporting_json",
+    "reporting_markdown",
+    "gpu_json",
+    "gpu_markdown"
+  ],
+  "present_artifact_count": 2,
+  "missing_artifact_count": 4,
+  "artifact_size_bytes_total": 7030,
+  "artifacts": {
+    "reporting_json": {
+      "path": "/workspace/Utube_videos/artifacts/reporting_output.json",
+      "exists": false,
+      "size_bytes": null
+    },
+    "reporting_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/reporting_summary.md",
+      "exists": false,
+      "size_bytes": null
+    },
+    "gpu_json": {
+      "path": "/workspace/Utube_videos/artifacts/gpu_report.json",
+      "exists": false,
+      "size_bytes": null
+    },
+    "gpu_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/gpu_report.md",
+      "exists": false,
+      "size_bytes": null
+    },
+    "self_check_json": {
+      "path": "/workspace/Utube_videos/artifacts/self_check_summary.json",
+      "exists": true,
+      "size_bytes": 4920
+    },
+    "self_check_markdown": {
+      "path": "/workspace/Utube_videos/artifacts/self_check_summary.md",
+      "exists": true,
+      "size_bytes": 2110
+    }
+  },
   "overall_passed": false,
   "overall_status": "fail",
   "exit_code": 1,
@@ -48,6 +101,23 @@
       "started_at": "2026-04-10T12:15:00+00:00",
       "finished_at": "2026-04-10T12:15:02+00:00",
       "duration_seconds": 2.0
+    },
+    {
+      "label": "GPU diagnostics",
+      "command": [
+        "python3.11",
+        "gpu_report.py",
+        "--output",
+        "artifacts/gpu_report.json",
+        "--markdown-output",
+        "artifacts/gpu_report.md"
+      ],
+      "command_display": "python3.11 gpu_report.py --output artifacts/gpu_report.json --markdown-output artifacts/gpu_report.md",
+      "status": "skipped",
+      "exit_code": null,
+      "started_at": null,
+      "finished_at": null,
+      "duration_seconds": null
     },
     {
       "label": "Strict reporting",

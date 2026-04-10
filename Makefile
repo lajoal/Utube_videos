@@ -1,9 +1,12 @@
 PYTHON ?= python
 
-.PHONY: report report-strict test self-check check
+.PHONY: report gpu-report report-strict test self-check check
 
 report:
 	$(PYTHON) reporting.py
+
+gpu-report:
+	$(PYTHON) gpu_report.py
 
 report-strict:
 	$(PYTHON) reporting.py --fail-on-missing --fail-on-validation-issues --output artifacts/reporting_output.json --markdown-output artifacts/reporting_summary.md

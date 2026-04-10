@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-04-10T12:20:05+00:00",
+  "repo_root": "/workspace/Utube_videos",
+  "python_executable": "python3.11",
+  "python_version": "3.11.9",
+  "platform": {
+    "system": "Linux",
+    "release": "6.8.0",
+    "machine": "x86_64"
+  },
+  "require_cuda": false,
+  "require_nvenc": false,
+  "gpu_available": true,
+  "cuda_ready": true,
+  "nvenc_available": true,
+  "available_workloads": [
+    "image_generation",
+    "speech_to_text",
+    "tts_generation",
+    "video_encode_nvenc",
+    "video_hwaccel_decode"
+  ],
+  "unavailable_workloads": [],
+  "requirement_failures": [],
+  "overall_passed": true,
+  "overall_status": "ready",
+  "json_report_path": "/workspace/Utube_videos/artifacts/gpu_report.json",
+  "markdown_summary_path": "/workspace/Utube_videos/artifacts/gpu_report.md",
+  "nvidia_smi": {
+    "available": true,
+    "command_found": true,
+    "command": [
+      "nvidia-smi",
+      "--query-gpu=index,name,memory.total,driver_version",
+      "--format=csv,noheader,nounits"
+    ],
+    "exit_code": 0,
+    "gpu_count": 1,
+    "gpus": [
+      {
+        "index": 0,
+        "name": "NVIDIA RTX 4090",
+        "memory_total_mb": 24564,
+        "driver_version": "555.42"
+      }
+    ],
+    "stderr": ""
+  },
+  "torch": {
+    "available": true,
+    "version": "2.6.0",
+    "cuda_available": true,
+    "cuda_version": "12.4",
+    "device_count": 1,
+    "devices": [
+      {
+        "index": 0,
+        "name": "NVIDIA RTX 4090",
+        "capability": "8.9"
+      }
+    ],
+    "cudnn_available": true
+  },
+  "ffmpeg": {
+    "available": true,
+    "command_found": true,
+    "version_line": "ffmpeg version 7.0.1",
+    "cuda_hwaccel_available": true,
+    "hwaccels": [
+      "cuda"
+    ],
+    "nvenc_encoders": [
+      "h264_nvenc",
+      "hevc_nvenc",
+      "av1_nvenc"
+    ],
+    "stderr": ""
+  }
+}

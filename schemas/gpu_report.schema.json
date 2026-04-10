@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lajoal/Utube_videos/blob/main/schemas/gpu_report.schema.json",
+  "title": "GPU Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generated_at",
+    "repo_root",
+    "python_executable",
+    "python_version",
+    "platform",
+    "require_cuda",
+    "require_nvenc",
+    "gpu_available",
+    "cuda_ready",
+    "nvenc_available",
+    "available_workloads",
+    "unavailable_workloads",
+    "requirement_failures",
+    "overall_passed",
+    "overall_status",
+    "json_report_path",
+    "markdown_summary_path",
+    "nvidia_smi",
+    "torch",
+    "ffmpeg"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repo_root": {
+      "type": "string"
+    },
+    "python_executable": {
+      "type": "string"
+    },
+    "python_version": {
+      "type": "string"
+    },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "release", "machine"],
+      "properties": {
+        "system": { "type": "string" },
+        "release": { "type": "string" },
+        "machine": { "type": "string" }
+      }
+    },
+    "require_cuda": {
+      "type": "boolean"
+    },
+    "require_nvenc": {
+      "type": "boolean"
+    },
+    "gpu_available": {
+      "type": "boolean"
+    },
+    "cuda_ready": {
+      "type": "boolean"
+    },
+    "nvenc_available": {
+      "type": "boolean"
+    },
+    "available_workloads": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unavailable_workloads": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "requirement_failures": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "overall_passed": {
+      "type": "boolean"
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["ready", "limited", "fail"]
+    },
+    "json_report_path": {
+      "type": "string"
+    },
+    "markdown_summary_path": {
+      "type": "string"
+    },
+    "nvidia_smi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available",
+        "command_found",
+        "command",
+        "exit_code",
+        "gpu_count",
+        "gpus",
+        "stderr"
+      ],
+      "properties": {
+        "available": { "type": "boolean" },
+        "command_found": { "type": "boolean" },
+        "command": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "exit_code": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "gpu_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gpus": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/gpuRecord" }
+        },
+        "stderr": {
+          "type": "string"
+        }
+      }
+    },
+    "torch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available",
+        "version",
+        "cuda_available",
+        "cuda_version",
+        "device_count",
+        "devices",
+        "cudnn_available"
+      ],
+      "properties": {
+        "available": { "type": "boolean" },
+        "version": { "type": ["string", "null"] },
+        "cuda_available": { "type": "boolean" },
+        "cuda_version": { "type": ["string", "null"] },
+        "device_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "devices": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/torchDevice" }
+        },
+        "cudnn_available": { "type": "boolean" }
+      }
+    },
+    "ffmpeg": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available",
+        "command_found",
+        "version_line",
+        "cuda_hwaccel_available",
+        "hwaccels",
+        "nvenc_encoders",
+        "stderr"
+      ],
+      "properties": {
+        "available": { "type": "boolean" },
+        "command_found": { "type": "boolean" },
+        "version_line": { "type": ["string", "null"] },
+        "cuda_hwaccel_available": { "type": "boolean" },
+        "hwaccels": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "nvenc_encoders": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "stderr": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "gpuRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "name", "memory_total_mb", "driver_version"],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string"
+        },
+        "memory_total_mb": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "driver_version": {
+          "type": "string"
+        }
+      }
+    },
+    "torchDevice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "name", "capability"],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "name": {
+          "type": "string"
+        },
+        "capability": {
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}

@@ -13,11 +13,18 @@
     "python_executable",
     "keep_going",
     "skip_tests",
+    "skip_gpu",
     "skip_report",
+    "require_cuda",
+    "require_nvenc",
     "reporting_output_path",
     "reporting_markdown_output_path",
     "reporting_output_exists",
     "reporting_markdown_output_exists",
+    "gpu_report_path",
+    "gpu_markdown_output_path",
+    "gpu_report_exists",
+    "gpu_markdown_output_exists",
     "self_check_summary_path",
     "self_check_summary_markdown_path",
     "selected_step_count",
@@ -27,6 +34,12 @@
     "passed_steps",
     "failed_steps",
     "skipped_steps",
+    "present_artifacts",
+    "missing_artifacts",
+    "present_artifact_count",
+    "missing_artifact_count",
+    "artifact_size_bytes_total",
+    "artifacts",
     "overall_passed",
     "overall_status",
     "exit_code",
@@ -61,7 +74,16 @@
     "skip_tests": {
       "type": "boolean"
     },
+    "skip_gpu": {
+      "type": "boolean"
+    },
     "skip_report": {
+      "type": "boolean"
+    },
+    "require_cuda": {
+      "type": "boolean"
+    },
+    "require_nvenc": {
       "type": "boolean"
     },
     "reporting_output_path": {
@@ -74,6 +96,18 @@
       "type": ["boolean", "null"]
     },
     "reporting_markdown_output_exists": {
+      "type": ["boolean", "null"]
+    },
+    "gpu_report_path": {
+      "type": ["string", "null"]
+    },
+    "gpu_markdown_output_path": {
+      "type": ["string", "null"]
+    },
+    "gpu_report_exists": {
+      "type": ["boolean", "null"]
+    },
+    "gpu_markdown_output_exists": {
       "type": ["boolean", "null"]
     },
     "self_check_summary_path": {
@@ -116,6 +150,74 @@
         "type": "string"
       }
     },
+    "present_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "missing_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "present_artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "missing_artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifact_size_bytes_total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reporting_json",
+        "reporting_markdown",
+        "gpu_json",
+        "gpu_markdown",
+        "self_check_json",
+        "self_check_markdown"
+      ],
+      "properties": {
+        "reporting_json": {
+          "anyOf": [
+            { "$ref": "#/$defs/artifactRecord" },
+            { "type": "null" }
+          ]
+        },
+        "reporting_markdown": {
+          "anyOf": [
+            { "$ref": "#/$defs/artifactRecord" },
+            { "type": "null" }
+          ]
+        },
+        "gpu_json": {
+          "anyOf": [
+            { "$ref": "#/$defs/artifactRecord" },
+            { "type": "null" }
+          ]
+        },
+        "gpu_markdown": {
+          "anyOf": [
+            { "$ref": "#/$defs/artifactRecord" },
+            { "type": "null" }
+          ]
+        },
+        "self_check_json": {
+          "$ref": "#/$defs/artifactRecord"
+        },
+        "self_check_markdown": {
+          "$ref": "#/$defs/artifactRecord"
+        }
+      }
+    },
     "overall_passed": {
       "type": "boolean"
     },
@@ -135,6 +237,27 @@
     }
   },
   "$defs": {
+    "artifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "exists",
+        "size_bytes"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "exists": {
+          "type": "boolean"
+        },
+        "size_bytes": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
     "stepResult": {
       "type": "object",
       "additionalProperties": false,
