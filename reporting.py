@@ -16,6 +16,7 @@ DEFAULT_REPORTING_TARGETS = [
     "render_plan.json",
 ]
 DEFAULT_TARGETS_MANIFEST = "reporting_targets.txt"
+DEFAULT_MARKDOWN_OUTPUT = "reporting_summary.md"
 
 DEFAULT_EXCLUDED_DIRS = {
     ".git",
@@ -79,6 +80,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--output",
         default="reporting_output.json",
         help="Output JSON path. Defaults to reporting_output.json.",
+    )
+    parser.add_argument(
+        "--markdown-output",
+        default=DEFAULT_MARKDOWN_OUTPUT,
+        help="Markdown summary output path. Defaults to reporting_summary.md.",
     )
     parser.add_argument(
         "--targets",
@@ -986,6 +992,67 @@ def build_output(
     }
 
 
+def build_markdown_summary(output: dict[str, Any]) -> str:
+    lines = [
+        "# Reporting Summary",
+        "",
+        f"- Generated at: `{output['generated_at']}`",
+        f"- Scan root: `{output['scan_root']}`",
+        f"- Target source: `{output['target_source']}`",
+        f"- Target filenames: `{len(output['targets'])}`",
+        f"- Matched files: `{output['matched_file_count']}`",
+        f"- Missing targets: `{len(output['missing_targets'])}`",
+        f"- Validation issues: `{output['validation_issue_count']}`",
+        f"- Cross validation issues: `{output['cross_validation_issue_count']}`",
+    ]
+
+    json_report_path = output.get("json_report_path")
+    markdown_summary_path = output.get("markdown_summary_path")
+    if json_report_path:
+        lines.append(f"- JSON report: `{json_report_path}`")
+    if markdown_summary_path:
+        lines.append(f"- Markdown summary: `{markdown_summary_path}`")
+
+    lines.extend(["", "## Missing Targets", ""])
+    if output["missing_targets"]:
+        for target in output["missing_targets"]:
+            lines.append(f"- `{target}`")
+    else:
+        lines.append("- None")
+
+    lines.extend(["", "## Files With Issues", ""])
+    if output["files_with_issues"]:
+        for directory, files in output["directories"].items():
+            for file_report in files:
+                if not file_report["validation_issues"]:
+                    continue
+                lines.append(f"### `{file_report['path']}`")
+                lines.append("")
+                lines.append(f"- Directory: `{directory}`")
+                for issue in file_report["validation_issues"]:
+                    lines.append(f"- {issue}")
+                lines.append("")
+    else:
+        lines.append("- None")
+
+    lines.extend(["", "## Matches By Directory", ""])
+    if output["directories"]:
+        for directory, files in output["directories"].items():
+            lines.append(f"### `{directory}`")
+            lines.append("")
+            for file_report in files:
+                lines.append(
+                    "- "
+                    f"`{file_report['path']}` "
+                    f"({file_report['kind']}, {file_report['validation_issue_count']} issue(s))"
+                )
+            lines.append("")
+    else:
+        lines.append("- None")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def print_summary(output: dict[str, Any]) -> None:
     print(f"Scan root: {output['scan_root']}")
     print(f"Target source: {output['target_source']}")
@@ -1031,14 +1098,29 @@ def main(argv: list[str] | None = None) -> int:
     output_path = Path(args.output)
     if not output_path.is_absolute():
         output_path = root / output_path
+
+    markdown_output_path = Path(args.markdown_output)
+    if not markdown_output_path.is_absolute():
+        markdown_output_path = root / markdown_output_path
+
+    output["json_report_path"] = str(output_path)
+    output["markdown_summary_path"] = str(markdown_output_path)
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
         json.dumps(output, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
 
+    markdown_output_path.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output_path.write_text(
+        build_markdown_summary(output),
+        encoding="utf-8",
+    )
+
     print_summary(output)
     print(f"Report written to: {output_path}")
+    print(f"Markdown summary written to: {markdown_output_path}")
 
     if args.fail_on_missing and output["missing_targets"]:
         print("Failing because missing targets were found.")

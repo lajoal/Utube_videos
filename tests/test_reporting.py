@@ -440,6 +440,66 @@ class ReportingTests(unittest.TestCase):
             )
         )
 
+    def test_build_markdown_summary_includes_issue_sections(self) -> None:
+        self.write_file(
+            "image_generation_prompts_ko.txt",
+            "[scene_02_problem]\n문제 정의 장면\n\n[scene_01_intro]\n밝은 인트로 장면\n",
+        )
+        self.write_file(
+            "tts_script_ko.txt",
+            "[scene_01_intro]\n이번 영상에서는 AI 기반 제작 흐름을 빠르게 살펴봅니다.\n\n[scene_02_problem]\n기획과 이미지, 편집 정보가 흩어지면 제작 속도가 느려집니다.\n",
+        )
+        self.write_json("scene_prompts.json", self.build_scene_prompts_data())
+        self.write_json("render_plan.json", self.build_render_plan_data())
+
+        grouped = reporting.collect_reports(
+            self.root,
+            reporting.DEFAULT_REPORTING_TARGETS,
+            preview_lines=3,
+            excluded_dirs=set(),
+        )
+        output = reporting.build_output(
+            self.root,
+            reporting.DEFAULT_REPORTING_TARGETS,
+            grouped,
+            target_source="built_in_defaults",
+            excluded_dirs=set(),
+        )
+        markdown = reporting.build_markdown_summary(output)
+
+        self.assertIn("# Reporting Summary", markdown)
+        self.assertIn("## Files With Issues", markdown)
+        self.assertIn("`image_generation_prompts_ko.txt`", markdown)
+        self.assertIn("image prompt label order does not match", markdown)
+
+    def test_main_writes_markdown_summary_file(self) -> None:
+        self.write_valid_text_assets()
+        self.write_json("scene_prompts.json", self.build_scene_prompts_data())
+        self.write_json("render_plan.json", self.build_render_plan_data())
+
+        exit_code = reporting.main(
+            [
+                "--root",
+                str(self.root),
+                "--output",
+                "artifacts/report.json",
+                "--markdown-output",
+                "artifacts/report.md",
+            ]
+        )
+
+        self.assertEqual(exit_code, 0)
+        report_path = self.root / "artifacts/report.json"
+        markdown_path = self.root / "artifacts/report.md"
+        self.assertTrue(report_path.is_file())
+        self.assertTrue(markdown_path.is_file())
+
+        output = json.loads(report_path.read_text(encoding="utf-8"))
+        self.assertEqual(output["markdown_summary_path"], str(markdown_path))
+        markdown = markdown_path.read_text(encoding="utf-8")
+        self.assertIn("# Reporting Summary", markdown)
+        self.assertIn("## Matches By Directory", markdown)
+
     def test_build_output_lists_missing_targets_and_validation_counts(self) -> None:
         self.write_file(
             "tts_script_ko.txt",

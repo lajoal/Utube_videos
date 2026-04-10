@@ -1,4 +1,6 @@
 __pycache__/
 *.py[cod]
 reporting_output.json
+reporting_summary.md
 artifacts/*.json
+artifacts/*.md

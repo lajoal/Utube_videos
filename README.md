@@ -20,7 +20,7 @@ Run the reporting script from the repository root:
 python reporting.py
 ```
 
-This writes `reporting_output.json` and prints a summary of the matching files.
+This writes both `reporting_output.json` and `reporting_summary.md`.
 
 By default, the script loads its target filenames from `reporting_targets.txt`. If that file is missing, it falls back to the built-in default list in `reporting.py`.
 
@@ -30,13 +30,16 @@ For automation and CI, fail the run when one or more targets are missing or when
 python reporting.py --fail-on-missing --fail-on-validation-issues
 ```
 
-You can also load targets from another file and write the report to a custom location:
+You can also load targets from another file and write the JSON report and Markdown summary to custom locations:
 
 ```bash
-python reporting.py --targets-file config/targets.txt --output artifacts/report.json
+python reporting.py \
+  --targets-file config/targets.txt \
+  --output artifacts/report.json \
+  --markdown-output artifacts/report.md
 ```
 
-The generated report includes the resolved target list, the `target_source` used for that run, per-file validation issues, and a `cross_validation_issue_count` for file-to-file checks.
+The generated outputs include the resolved target list, the `target_source` used for that run, per-file validation issues, and a `cross_validation_issue_count` for file-to-file checks. The Markdown summary is meant for quick human review, while the JSON report is better suited for automation.
 
 ## Validation rules
 The reporting flow validates more than file existence.
@@ -65,6 +68,8 @@ make test
 make check
 ```
 
+`make report-strict` writes both `artifacts/reporting_output.json` and `artifacts/reporting_summary.md`.
+
 ## Testing
 Run the built-in unit tests from the repository root:
 
@@ -72,4 +77,4 @@ Run the built-in unit tests from the repository root:
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-GitHub Actions runs the test suite, performs a strict reporting smoke check, and uploads the generated report as a workflow artifact on pushes to `main` and on pull requests.
+GitHub Actions runs the test suite, performs a strict reporting smoke check, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main` and on pull requests.
