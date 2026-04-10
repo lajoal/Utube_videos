@@ -7,6 +7,8 @@ Seed workspace for a Korean video production flow.
 - `reporting_targets.txt`
 - `config/targets.txt.example`
 - `docs/reporting-workflow.md`
+- `examples/reporting_output.sample.json`
+- `examples/reporting_summary.sample.md`
 - `image_generation_prompts_ko.txt`
 - `tts_script_ko.txt`
 - `scene_prompts.json`
@@ -76,6 +78,8 @@ make check
 Detailed reporting behavior and examples live here:
 - `docs/reporting-workflow.md`
 - `config/targets.txt.example`
+- `examples/reporting_output.sample.json`
+- `examples/reporting_summary.sample.md`
 
 ## Testing
 Run the built-in unit tests from the repository root:

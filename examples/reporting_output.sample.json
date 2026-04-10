@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-04-10T04:30:00+00:00",
+  "scan_root": "/workspace/Utube_videos",
+  "targets": [
+    "image_generation_prompts_ko.txt",
+    "tts_script_ko.txt",
+    "scene_prompts.json",
+    "render_plan.json"
+  ],
+  "target_source": "default_manifest",
+  "excluded_directories": [
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".venv",
+    "__pycache__",
+    "venv"
+  ],
+  "matched_file_count": 4,
+  "missing_targets": [],
+  "validation_issue_count": 0,
+  "cross_validation_issue_count": 0,
+  "files_with_issues": [],
+  "overall_passed": true,
+  "overall_status": "pass",
+  "json_report_path": "/workspace/Utube_videos/reporting_output.json",
+  "markdown_summary_path": "/workspace/Utube_videos/reporting_summary.md",
+  "directories": {
+    ".": [
+      {
+        "name": "image_generation_prompts_ko.txt",
+        "path": "image_generation_prompts_ko.txt",
+        "size_bytes": 720,
+        "modified_at": "2026-04-10T04:25:00+00:00",
+        "kind": "text",
+        "line_count": 11,
+        "preview": "[scene_01_intro]\n현대적인 모션 그래픽 스타일의 오프닝 화면.\n",
+        "json_summary": null,
+        "validation_issue_count": 0,
+        "validation_issues": []
+      },
+      {
+        "name": "tts_script_ko.txt",
+        "path": "tts_script_ko.txt",
+        "size_bytes": 450,
+        "modified_at": "2026-04-10T04:25:00+00:00",
+        "kind": "text",
+        "line_count": 11,
+        "preview": "[scene_01_intro]\n이번 영상에서는 AI 기반 영상 제작 흐름을 빠르게 살펴봅니다.\n",
+        "json_summary": null,
+        "validation_issue_count": 0,
+        "validation_issues": []
+      },
+      {
+        "name": "scene_prompts.json",
+        "path": "scene_prompts.json",
+        "size_bytes": 1240,
+        "modified_at": "2026-04-10T04:25:00+00:00",
+        "kind": "json",
+        "line_count": 34,
+        "preview": null,
+        "json_summary": {
+          "type": "object",
+          "top_level_keys": [
+            "project",
+            "language",
+            "scenes"
+          ],
+          "top_level_key_count": 3
+        },
+        "validation_issue_count": 0,
+        "validation_issues": []
+      },
+      {
+        "name": "render_plan.json",
+        "path": "render_plan.json",
+        "size_bytes": 1180,
+        "modified_at": "2026-04-10T04:25:00+00:00",
+        "kind": "json",
+        "line_count": 42,
+        "preview": null,
+        "json_summary": {
+          "type": "object",
+          "top_level_keys": [
+            "project",
+            "format",
+            "audio",
+            "assets",
+            "timeline",
+            "output"
+          ],
+          "top_level_key_count": 6
+        },
+        "validation_issue_count": 0,
+        "validation_issues": []
+      }
+    ]
+  }
+}

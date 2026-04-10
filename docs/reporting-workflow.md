@@ -57,6 +57,14 @@ python reporting.py \
   --markdown-output artifacts/report.md
 ```
 
+## Example Outputs
+
+Sample outputs are checked into the repository here:
+- `examples/reporting_output.sample.json`
+- `examples/reporting_summary.sample.md`
+
+These examples show the shape of a successful reporting run.
+
 ## What Gets Validated
 
 `image_generation_prompts_ko.txt`
