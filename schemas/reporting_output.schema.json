@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lajoal/Utube_videos/blob/main/schemas/reporting_output.schema.json",
+  "title": "Reporting Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generated_at",
+    "scan_root",
+    "targets",
+    "target_source",
+    "excluded_directories",
+    "matched_file_count",
+    "missing_targets",
+    "validation_issue_count",
+    "cross_validation_issue_count",
+    "files_with_issues",
+    "overall_passed",
+    "overall_status",
+    "directories"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scan_root": {
+      "type": "string"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "target_source": {
+      "type": "string"
+    },
+    "excluded_directories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "matched_file_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "missing_targets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_issue_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cross_validation_issue_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "files_with_issues": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "overall_passed": {
+      "type": "boolean"
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["pass", "fail"]
+    },
+    "json_report_path": {
+      "type": "string"
+    },
+    "markdown_summary_path": {
+      "type": "string"
+    },
+    "directories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/fileReport"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "jsonSummary": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "top_level_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "top_level_key_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_item_type": {
+          "type": ["string", "null"]
+        },
+        "value_preview": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    "fileReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "path",
+        "size_bytes",
+        "modified_at",
+        "kind",
+        "line_count",
+        "preview",
+        "json_summary",
+        "validation_issue_count",
+        "validation_issues"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modified_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["text", "json", "binary"]
+        },
+        "line_count": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "preview": {
+          "type": ["string", "null"]
+        },
+        "json_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/jsonSummary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validation_issue_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "validation_issues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

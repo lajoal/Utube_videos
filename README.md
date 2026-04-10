@@ -7,6 +7,7 @@ Seed workspace for a Korean video production flow.
 - `reporting_targets.txt`
 - `config/targets.txt.example`
 - `docs/reporting-workflow.md`
+- `schemas/reporting_output.schema.json`
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`
@@ -80,6 +81,7 @@ make check
 Detailed reporting behavior and examples live here:
 - `docs/reporting-workflow.md`
 - `config/targets.txt.example`
+- `schemas/reporting_output.schema.json`
 - `examples/reporting_output.sample.json`
 - `examples/reporting_summary.sample.md`
 - `examples/reporting_output.fail.sample.json`

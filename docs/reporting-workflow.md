@@ -57,6 +57,13 @@ python reporting.py \
   --markdown-output artifacts/report.md
 ```
 
+## Output Schema
+
+The JSON report structure is documented here:
+- `schemas/reporting_output.schema.json`
+
+This schema is useful when another tool needs to validate or parse `reporting_output.json` programmatically.
+
 ## Example Outputs
 
 Sample outputs are checked into the repository here:
