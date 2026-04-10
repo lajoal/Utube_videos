@@ -62,6 +62,8 @@ make check
 
 This runs the unit tests first and then executes the strict reporting flow. GitHub Actions now uses the same `self_check.py` entrypoint and can also be triggered manually with `workflow_dispatch`.
 
+If `self_check.py` exits before the reporting step, the GitHub Actions workflow summary now shows a short note instead of failing a second time while trying to read a missing Markdown artifact.
+
 The generated outputs include the resolved target list, the `target_source` used for that run, per-file validation issues, `overall_status` / `overall_passed`, and a `cross_validation_issue_count` for file-to-file checks. The Markdown summary is meant for quick human review, while the JSON report is better suited for automation.
 
 ## Validation rules
@@ -114,4 +116,4 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 
 The test suite now also checks that the checked-in sample outputs stay aligned with the documented report shape and that the `self_check.py` command composition stays consistent.
 
-GitHub Actions runs the repository self-check flow, publishes the Markdown summary into the workflow summary UI, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main`, pull requests, and manual dispatches.
+GitHub Actions runs the repository self-check flow, publishes the Markdown summary into the workflow summary UI when available, and uploads the generated `artifacts/` directory as a workflow artifact on pushes to `main`, pull requests, and manual dispatches.

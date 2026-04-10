@@ -32,6 +32,8 @@ This runs:
 
 The GitHub Actions workflow uses the same entrypoint, and it also supports manual runs through `workflow_dispatch`.
 
+If the self-check exits before the reporting step, the workflow summary now prints a short fallback note instead of failing again when the Markdown artifact is missing.
+
 ## Strict Mode
 
 Strict mode is intended for CI and automation.

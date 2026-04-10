@@ -27,7 +27,11 @@ jobs:
         run: |
           echo "## Reporting Artifact" >> "$GITHUB_STEP_SUMMARY"
           echo >> "$GITHUB_STEP_SUMMARY"
-          cat artifacts/reporting_summary.md >> "$GITHUB_STEP_SUMMARY"
+          if [ -f artifacts/reporting_summary.md ]; then
+            cat artifacts/reporting_summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Reporting summary was not generated because the self-check exited early." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload reporting artifact
         if: always()
@@ -35,4 +39,4 @@ jobs:
         with:
           name: reporting-output
           path: artifacts/
-          if-no-files-found: error
+          if-no-files-found: warn
